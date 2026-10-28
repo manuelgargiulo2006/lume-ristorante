@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head(${status == 404} ? 'Pagina non trovata' : (${status == 403} ? 'Accesso negato' : 'Errore'))}"></head>
+<body class="sito errore-sito">
+
+<main class="errore">
+    <div class="hero__glow" aria-hidden="true"></div>
+    <a class="nav__brand" th:href="@{/}">
+        <svg class="nav__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+        <span>Lume</span>
+    </a>
+    <p class="errore__codice" th:text="${status}">404</p>
+    <th:block th:switch="${status}">
+        <th:block th:case="404">
+            <h1>Questo tavolo <em>non esiste</em></h1>
+            <p>La pagina che cerchi non c'è, o forse è stata spostata.</p>
+        </th:block>
+        <th:block th:case="403">
+            <h1>Sezione <em>riservata</em></h1>
+            <p>Il tuo account non ha i permessi per questa pagina. Chiedi all'amministratore se ti serve l'accesso.</p>
+        </th:block>
+        <th:block th:case="*">
+            <h1>Qualcosa è <em>andato storto</em></h1>
+            <p>Abbiamo avuto un problema imprevisto. Riprova tra qualche istante.</p>
+        </th:block>
+    </th:block>
+    <div class="hero__actions">
+        <a class="btn btn--brass btn--lg" th:href="@{/}">Torna al sito</a>
+        <a class="btn btn--ghost btn--lg" th:href="@{/gestione}">Vai al gestionale</a>
+    </div>
+</main>
+</body>
+</html>

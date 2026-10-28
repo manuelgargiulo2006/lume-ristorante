@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout(${membro == null} ? 'Nuovo account' : ${membro.nomeCompleto}, ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/staff}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Staff
+            </a>
+            <h2 th:if="${membro == null}">Nuovo <em>account</em></h2>
+            <h2 th:unless="${membro == null}" th:text="${membro.nomeCompleto}">Marco Russo</h2>
+        </div>
+    </header>
+
+    <div class="form-layout">
+        <form method="post" class="card" th:object="${form}" novalidate autocomplete="off"
+              th:action="${membro == null} ? @{/gestione/staff/nuovo} : @{/gestione/staff/{id}(id=${membro.id})}">
+            <div class="card__body form">
+                <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                    <span th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</span>
+                </div>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Nome e cognome</span>
+                        <input type="text" th:field="*{nomeCompleto}" maxlength="80" th:classappend="${#fields.hasErrors('nomeCompleto')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('nomeCompleto')}" th:errors="*{nomeCompleto}"></em>
+                    </label>
+                    <label class="field">
+                        <span>Nome utente <small>per il login</small></span>
+                        <input type="text" th:field="*{username}" maxlength="40" autocapitalize="none" spellcheck="false" th:classappend="${#fields.hasErrors('username')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></em>
+                    </label>
+                    <label class="field full">
+                        <span th:text="${membro == null} ? 'Password' : 'Nuova password'">Password</span>
+                        <input type="password" th:field="*{password}" maxlength="72" autocomplete="new-password"
+                               th:placeholder="${membro == null} ? 'Almeno 8 caratteri' : 'Lascia vuoto per non cambiarla'">
+                        <em class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></em>
+                    </label>
+                    <div class="field full">
+                        <span class="field__label">Ruolo</span>
+                        <div class="scelta-ruolo">
+                            <label class="metodo" th:each="r : ${ruoli}">
+                                <input type="radio" th:field="*{ruolo}" th:value="${r}">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#' + (${r.name() == 'ADMIN'} ? 'stella' : (${r.name() == 'SALA'} ? 'sala' : 'cucina'))"/></svg>
+                                <span th:text="${r.label}">Sala</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <label class="switch"><input type="checkbox" th:field="*{attivo}"><span class="switch__track"></span>
+                            <span>Account attivo</span></label>
+                        <span class="field__hint">Un account disattivato non può più entrare, ma resta nello storico dei conti.</span>
+                    </div>
+                </div>
+            </div>
+            <footer class="card__foot">
+                <a class="btn btn--ghost" th:href="@{/gestione/staff}">Annulla</a>
+                <button type="submit" class="btn btn--primary">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Salva
+                </button>
+            </footer>
+        </form>
+    </div>
+</main>
+</body>
+</html>

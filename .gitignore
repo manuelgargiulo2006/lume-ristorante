@@ -1,0 +1,35 @@
+# build
+target/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+.apt_generated
+.springBeans
+.sts4-cache
+bin/
+out/
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# sistema
+.DS_Store
+Thumbs.db
+
+# segreti e configurazioni locali: la chiave Groq va SOLO nelle variabili d'ambiente
+.env
+*.env
+application-local.properties

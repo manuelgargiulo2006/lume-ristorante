@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/testa :: head('Cucina')}"></head>
+<body class="kds-body">
+
+<div class="kds" data-kds th:attr="data-api=@{/api/gestione/cucina}">
+    <header class="kds__bar">
+        <a class="kds__back" th:href="@{/gestione}" title="Torna al gestionale">
+            <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>
+            <svg class="kds__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+            <span>Cucina</span>
+        </a>
+
+        <div class="kds__conta" aria-live="polite">
+            <span class="kds__stat"><b data-conta="INVIATO">0</b> in coda</span>
+            <span class="kds__stat kds__stat--cooking"><b data-conta="IN_PREPARAZIONE">0</b> sul fuoco</span>
+            <span class="kds__stat kds__stat--ready"><b data-conta="PRONTO">0</b> pronti</span>
+        </div>
+
+        <div class="kds__tools">
+            <span class="kds__clock" data-orologio>20:30</span>
+            <button type="button" class="kds__btn" data-kds-suono aria-pressed="true" title="Avviso sonoro per le nuove comande">
+                <svg class="i i--on"><use th:href="@{/img/icons.svg} + '#suono'"/></svg>
+                <svg class="i i--off"><use th:href="@{/img/icons.svg} + '#muto'"/></svg>
+            </button>
+            <button type="button" class="kds__btn" data-kds-schermo title="Schermo intero">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#schermo'"/></svg>
+            </button>
+        </div>
+    </header>
+
+    <p class="kds__aiuto">Tocca un piatto per farlo avanzare: <span class="s s--q">in coda</span> → <span class="s s--c">sul fuoco</span> → <span class="s s--r">pronto</span>. Il tasto ↺ annulla l'ultimo tocco.</p>
+
+    <main class="kds__griglia" data-kds-griglia>
+        <script type="application/json" th:inline="javascript">/*[[${tickets}]]*/ []</script>
+    </main>
+
+    <div class="kds__vuoto" data-kds-vuoto hidden>
+        <svg class="kds__vuoto-logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+        <p>Nessuna comanda in attesa</p>
+        <small>Le nuove comande compaiono qui da sole, con un avviso sonoro.</small>
+    </div>
+</div>
+
+</body>
+</html>

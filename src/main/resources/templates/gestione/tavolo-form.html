@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout(${tavolo == null} ? 'Nuovo tavolo' : 'Tavolo ' + ${tavolo.numero}, ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/tavoli}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Tavoli
+            </a>
+            <h2 th:if="${tavolo == null}">Nuovo <em>tavolo</em></h2>
+            <h2 th:unless="${tavolo == null}">Tavolo <em th:text="${tavolo.numero}">3</em></h2>
+        </div>
+    </header>
+
+    <div class="form-layout">
+        <form method="post" class="card" th:object="${form}" novalidate
+              th:action="${tavolo == null} ? @{/gestione/tavoli/nuovo} : @{/gestione/tavoli/{id}(id=${tavolo.id})}">
+            <input type="hidden" th:field="*{posX}">
+            <input type="hidden" th:field="*{posY}">
+            <div class="card__body form">
+                <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                    <span th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</span>
+                </div>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Numero</span>
+                        <input type="number" th:field="*{numero}" min="1" max="999" th:classappend="${#fields.hasErrors('numero')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('numero')}" th:errors="*{numero}"></em>
+                    </label>
+                    <label class="field">
+                        <span>Posti</span>
+                        <div class="stepper" data-stepper>
+                            <button type="button" data-delta="-1" aria-label="Meno"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                            <input type="number" th:field="*{posti}" min="1" max="20">
+                            <button type="button" data-delta="1" aria-label="Più"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                        </div>
+                        <em class="field-error" th:if="${#fields.hasErrors('posti')}" th:errors="*{posti}"></em>
+                    </label>
+                    <div class="field full">
+                        <span class="field__label">Zona</span>
+                        <div class="seg">
+                            <label th:each="z : ${zone}"><input type="radio" th:field="*{zona}" th:value="${z}"><span th:text="${z.label}">Sala</span></label>
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <span class="field__label">Forma</span>
+                        <div class="scelta-ruolo">
+                            <label class="metodo" th:each="f : ${forme}">
+                                <input type="radio" th:field="*{forma}" th:value="${f}">
+                                <span class="forma-icona" th:classappend="'forma-icona--' + ${#strings.toLowerCase(f)}"></span>
+                                <span th:text="${f.label}">Quadrato</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="field full">
+                        <label class="switch"><input type="checkbox" th:field="*{attivo}"><span class="switch__track"></span>
+                            <span>Tavolo in uso</span></label>
+                        <span class="field__hint">I tavoli non in uso spariscono dalla mappa e dalle prenotazioni, ma restano nello storico.</span>
+                    </div>
+                </div>
+            </div>
+            <footer class="card__foot">
+                <a class="btn btn--ghost" th:href="@{/gestione/tavoli}">Annulla</a>
+                <button type="submit" class="btn btn--primary">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Salva
+                </button>
+            </footer>
+        </form>
+    </div>
+</main>
+</body>
+</html>

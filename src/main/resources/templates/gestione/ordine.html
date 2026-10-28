@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Tavolo ' + ${ordine.tavolo.numero}, ~{::main})}">
+<body>
+<main class="pagina" data-comanda th:with="aperto=${ordine.stato.name() == 'APERTO'}">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/sala}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Torna alla sala
+            </a>
+            <h2>Tavolo <em th:text="${ordine.tavolo.numero}">3</em></h2>
+            <p class="comanda-meta">
+                <span class="pill" th:classappend="${ordine.stato.name() == 'APERTO'} ? 'pill--occupato' : (${ordine.stato.name() == 'CONTO'} ? 'pill--conto' : 'pill--draft')"
+                      th:text="${ordine.stato.label}">Aperto</span>
+                <span><svg class="i"><use th:href="@{/img/icons.svg} + '#orologio'"/></svg>
+                    <span th:text="'dalle ' + ${#temporals.format(ordine.apertoIl, 'HH:mm')} + ' · ' + ${@fmt.durata(ordine.minutiAlTavolo)}">dalle 20:10</span></span>
+                <span th:if="${ordine.cameriere}"><svg class="i"><use th:href="@{/img/icons.svg} + '#staff'"/></svg>
+                    <span th:text="${ordine.cameriere.nomeCompleto}">Marco</span></span>
+                <span th:if="${ordine.prenotazione}"><svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>
+                    <span th:text="${ordine.prenotazione.nome}">Rossi</span></span>
+            </p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" th:href="@{/gestione/ordini/{id}/preconto(id=${ordine.id})}" target="_blank">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#stampa'"/></svg>Preconto
+            </a>
+        </div>
+    </header>
+
+    <div class="alert alert--info" th:if="${!ordine.attivo}">
+        <svg class="i"><use th:href="@{/img/icons.svg} + '#conto'"/></svg>
+        <span>Questa comanda è <strong th:text="${#strings.toLowerCase(ordine.stato.label)}">chiusa</strong>
+            <th:block th:if="${ordine.chiusoIl}" th:text="' alle ' + ${#temporals.format(ordine.chiusoIl, 'HH:mm dd/MM')}"></th:block>.</span>
+    </div>
+
+    <div class="comanda-layout" th:classappend="${!aperto} ? 'is-sola-lettura'">
+
+        <!-- ===== scelta dei piatti ===== -->
+        <section class="card scelta" th:if="${aperto}" data-scelta>
+            <div class="scelta__top">
+                <label class="scelta__cerca">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#cerca'"/></svg>
+                    <input type="search" placeholder="Cerca un piatto…" data-scelta-cerca autocomplete="off">
+                </label>
+                <div class="seg scelta__tabs" role="tablist">
+                    <button type="button" class="is-active" data-cat="tutti">Tutti</button>
+                    <button type="button" th:each="voce : ${menu}" th:attr="data-cat=${voce.key.id}" th:text="${voce.key.nome}">Primi</button>
+                </div>
+            </div>
+            <div class="scelta__griglia">
+                <th:block th:each="voce : ${menu}">
+                    <form th:each="p : ${voce.value}" method="post" data-ajax class="piatto-btn-form"
+                          th:action="@{/gestione/ordini/{id}/aggiungi(id=${ordine.id})}"
+                          th:attr="data-cat=${voce.key.id},data-nome=${#strings.toLowerCase(p.nome)}">
+                        <input type="hidden" name="piattoId" th:value="${p.id}">
+                        <button type="submit" class="piatto-btn" th:disabled="${!p.disponibile}"
+                                th:classappend="${!p.disponibile} ? 'is-esaurito'">
+                            <span class="piatto-btn__cat" th:text="${voce.key.nome}">Primi</span>
+                            <strong th:text="${p.nome}">Genovese</strong>
+                            <span class="piatto-btn__foot">
+                                <span class="num" th:text="${@fmt.euro(p.prezzo)}">€ 19,00</span>
+                                <span class="tag tag--off" th:if="${!p.disponibile}">Esaurito</span>
+                                <span class="tag tag--veg" th:if="${p.disponibile and p.vegetariano}">V</span>
+                            </span>
+                        </button>
+                        <button type="button" class="piatto-btn__nota" th:if="${p.disponibile}" title="Aggiungi con una nota"
+                                data-modal-open="modale-nota" th:attr="data-piatto=${p.id},data-nome=${p.nome}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#nota'"/></svg>
+                        </button>
+                    </form>
+                </th:block>
+            </div>
+            <p class="empty" data-scelta-vuoto hidden><small>Nessun piatto trovato</small></p>
+        </section>
+
+        <!-- ===== comanda ===== -->
+        <section class="card comanda" data-swap="comanda"
+                 th:attr="data-subtotale=${ordine.subtotale},data-coperti-importo=${ordine.importoCoperti},data-coperti=${ordine.coperti}">
+            <header class="comanda__head">
+                <div>
+                    <h3>Comanda</h3>
+                    <small th:text="${ordine.numeroPiatti} + (${ordine.numeroPiatti == 1} ? ' piatto' : ' piatti')">8 piatti</small>
+                </div>
+                <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/coperti(id=${ordine.id})}" class="comanda__coperti">
+                    <span class="faint">Coperti</span>
+                    <div class="stepper" th:attr="data-stepper=${aperto} ? '' : null">
+                        <button type="button" data-delta="-1" th:disabled="${!aperto}" aria-label="Un coperto in meno"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                        <input type="number" name="coperti" min="1" max="30" th:value="${ordine.coperti}" th:readonly="${!aperto}" data-auto-submit>
+                        <button type="button" data-delta="1" th:disabled="${!aperto}" aria-label="Un coperto in più"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                    </div>
+                </form>
+            </header>
+
+            <div class="comanda__righe">
+                <div class="empty" th:if="${#lists.isEmpty(ordine.righe)}">
+                    <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#menu'"/></svg></span>
+                    <strong>La comanda è vuota</strong>
+                    <small>Tocca i piatti a sinistra per aggiungerli.</small>
+                </div>
+
+                <section class="uscita" th:each="gruppo : ${perUscita}">
+                    <h4 class="uscita__titolo">
+                        <span th:text="${gruppo.key} + 'ª uscita'">1ª uscita</span>
+                        <small th:text="${gruppo.key == 1} ? 'antipasti e primi' : (${gruppo.key == 2} ? 'secondi' : 'dolci e caffè')">antipasti</small>
+                    </h4>
+                    <ul class="righe">
+                        <li class="riga" th:each="r : ${gruppo.value}" th:classappend="'riga--' + ${r.stato.tone}"
+                            th:with="bozza=${aperto and r.stato.name() == 'IN_ATTESA'}">
+                            <div class="riga__qta">
+                                <th:block th:if="${bozza}">
+                                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/righe/{r}/meno(id=${ordine.id},r=${r.id})}">
+                                        <button class="riga__btn" aria-label="Uno in meno"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                                    </form>
+                                    <span class="riga__n" th:text="${r.quantita}">2</span>
+                                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/righe/{r}/piu(id=${ordine.id},r=${r.id})}">
+                                        <button class="riga__btn" aria-label="Uno in più"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                                    </form>
+                                </th:block>
+                                <span class="riga__n riga__n--fisso" th:unless="${bozza}" th:text="${r.quantita} + '×'">2×</span>
+                            </div>
+                            <div class="riga__main">
+                                <strong th:text="${r.piatto.nome}">Genovese</strong>
+                                <span class="riga__nota" th:if="${r.note}">
+                                    <svg class="i"><use th:href="@{/img/icons.svg} + '#nota'"/></svg><span th:text="${r.note}">senza cipolla</span>
+                                </span>
+                                <span class="pill" th:classappend="'pill--' + ${r.stato.tone}" th:text="${r.stato.label}">In coda</span>
+                            </div>
+                            <span class="riga__importo num" th:text="${@fmt.euro(r.importo)}">€ 38,00</span>
+                            <details class="riga__menu" th:if="${bozza}" th:attr="data-id='riga-' + ${r.id}">
+                                <summary class="riga__btn" aria-label="Altre azioni">⋯</summary>
+                                <div class="riga__pop">
+                                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/righe/{r}/nota(id=${ordine.id},r=${r.id})}" class="riga__form">
+                                        <label class="field"><span>Nota per la cucina</span>
+                                            <input type="text" name="nota" th:value="${r.note}" maxlength="200" placeholder="es. senza cipolla">
+                                        </label>
+                                        <button class="btn btn--sm">Salva nota</button>
+                                    </form>
+                                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/righe/{r}/uscita(id=${ordine.id},r=${r.id})}" class="riga__form">
+                                        <label class="field"><span>Uscita</span>
+                                            <select name="uscita" data-auto-submit>
+                                                <option th:each="u : ${#numbers.sequence(1, 3)}" th:value="${u}" th:selected="${u == r.uscita}" th:text="${u} + 'ª uscita'">1</option>
+                                            </select>
+                                        </label>
+                                    </form>
+                                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/righe/{r}/rimuovi(id=${ordine.id},r=${r.id})}">
+                                        <button class="btn btn--sm btn--danger btn--block">
+                                            <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg>Togli dalla comanda
+                                        </button>
+                                    </form>
+                                </div>
+                            </details>
+                        </li>
+                    </ul>
+                </section>
+            </div>
+
+            <dl class="comanda__totali">
+                <div><dt>Piatti</dt><dd class="num" th:text="${@fmt.euro(ordine.subtotale)}">€ 120,00</dd></div>
+                <div><dt th:text="'Coperto ' + ${ordine.coperti} + ' × ' + ${@fmt.euro(ordine.copertoUnitario)}">Coperto</dt>
+                    <dd class="num" th:text="${@fmt.euro(ordine.importoCoperti)}">€ 14,00</dd></div>
+                <div th:if="${ordine.scontoPercentuale > 0}"><dt th:text="'Sconto ' + ${ordine.scontoPercentuale} + '%'">Sconto</dt>
+                    <dd class="num" th:text="'− ' + ${@fmt.euro(ordine.importoSconto)}">− € 10</dd></div>
+                <div class="comanda__totale"><dt>Totale</dt><dd class="num" th:text="${@fmt.euro(ordine.totaleCorrente)}">€ 134,00</dd></div>
+            </dl>
+
+            <div class="comanda__azioni" th:if="${ordine.attivo}">
+                <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/invia(id=${ordine.id})}" th:if="${aperto}">
+                    <button class="btn btn--primary btn--lg btn--block" th:disabled="${daInviare == 0}">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#invia'"/></svg>
+                        <span th:text="${daInviare > 0} ? 'Invia in cucina (' + ${daInviare} + ')' : 'Niente da inviare'">Invia in cucina</span>
+                    </button>
+                </form>
+                <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/servi(id=${ordine.id})}" th:if="${pronti > 0}">
+                    <button class="btn btn--ok btn--lg btn--block">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#campana'"/></svg>
+                        <span th:text="'Servi i piatti pronti (' + ${pronti} + ')'">Servi</span>
+                    </button>
+                </form>
+                <div class="comanda__secondarie">
+                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/conto(id=${ordine.id})}" th:if="${aperto}">
+                        <button class="btn btn--block" th:disabled="${#lists.isEmpty(ordine.righe)}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#conto'"/></svg>Richiedi il conto
+                        </button>
+                    </form>
+                    <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/riapri(id=${ordine.id})}" th:unless="${aperto}">
+                        <button class="btn btn--block">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg>Riapri la comanda
+                        </button>
+                    </form>
+                    <button type="button" class="btn btn--brass btn--block" data-modal-open="modale-chiudi"
+                            th:disabled="${#lists.isEmpty(ordine.righe) or daInviare > 0}"
+                            th:title="${daInviare > 0} ? 'Invia prima i piatti in cucina' : 'Incassa e libera il tavolo'">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#carta'"/></svg>Chiudi il conto
+                    </button>
+                </div>
+                <form method="post" th:action="@{/gestione/ordini/{id}/annulla(id=${ordine.id})}" class="comanda__annulla"
+                      th:if="${aperto and #lists.isEmpty(ordine.righe.?[stato.name() != 'IN_ATTESA'])}"
+                      data-conferma="Annullare la comanda? Il tavolo tornerà libero.">
+                    <button class="link link--danger">Annulla la comanda e libera il tavolo</button>
+                </form>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== aggiunta con nota ===== -->
+    <dialog class="modal" id="modale-nota" th:if="${aperto}" data-modale-nota>
+        <form method="post" data-ajax th:action="@{/gestione/ordini/{id}/aggiungi(id=${ordine.id})}">
+            <input type="hidden" name="piattoId">
+            <header class="modal__head">
+                <h3 data-nota-titolo>Piatto</h3>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Chiudi"><svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+            </header>
+            <div class="modal__body">
+                <label class="field"><span>Quantità</span>
+                    <div class="stepper" data-stepper>
+                        <button type="button" data-delta="-1"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                        <input type="number" name="quantita" value="1" min="1" max="50">
+                        <button type="button" data-delta="1"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                    </div>
+                </label>
+                <label class="field"><span>Nota per la cucina</span>
+                    <input type="text" name="note" maxlength="200" placeholder="es. senza aglio, cottura media…" data-nota-input>
+                </label>
+                <div class="chips" data-nota-chips>
+                    <button type="button" class="chip">senza glutine</button>
+                    <button type="button" class="chip">senza lattosio</button>
+                    <button type="button" class="chip">senza aglio</button>
+                    <button type="button" class="chip">porzione bimbo</button>
+                    <button type="button" class="chip">ben cotto</button>
+                    <button type="button" class="chip">condimento a parte</button>
+                </div>
+            </div>
+            <footer class="modal__foot">
+                <button type="button" class="btn btn--ghost" data-modal-close>Annulla</button>
+                <button type="submit" class="btn btn--primary" data-modal-close-after>Aggiungi alla comanda</button>
+            </footer>
+        </form>
+    </dialog>
+
+    <!-- ===== chiusura del conto ===== -->
+    <dialog class="modal modal--conto" id="modale-chiudi" th:if="${ordine.attivo}" data-modale-conto>
+        <form method="post" th:action="@{/gestione/ordini/{id}/chiudi(id=${ordine.id})}">
+            <header class="modal__head">
+                <div>
+                    <p class="eyebrow" th:text="'Tavolo ' + ${ordine.tavolo.numero} + ' · ' + ${ordine.coperti} + ' coperti'">Tavolo 3</p>
+                    <h3>Chiudi il conto</h3>
+                </div>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Chiudi"><svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+            </header>
+            <div class="modal__body">
+                <fieldset class="metodi">
+                    <legend class="field__label">Metodo di pagamento</legend>
+                    <label class="metodo" th:each="m, st : ${metodi}">
+                        <input type="radio" name="metodo" th:value="${m}" th:checked="${st.first}" required>
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#' + (${m.name() == 'CONTANTI'} ? 'conto' : (${m.name() == 'BUONO'} ? 'nota' : 'carta'))"/></svg>
+                        <span th:text="${m.label}">Carta</span>
+                    </label>
+                </fieldset>
+                <div class="field">
+                    <span class="field__label">Sconto</span>
+                    <div class="seg seg--sconti">
+                        <label th:each="s : ${ {0, 5, 10, 15, 20} }">
+                            <input type="radio" name="sconto" th:value="${s}" th:checked="${s == ordine.scontoPercentuale}">
+                            <span th:text="${s == 0} ? 'Nessuno' : ${s} + '%'">10%</span>
+                        </label>
+                    </div>
+                </div>
+                <dl class="conto-riepilogo">
+                    <div><dt>Piatti e coperto</dt><dd class="num" data-conto-base>€ 0</dd></div>
+                    <div data-conto-riga-sconto hidden><dt>Sconto</dt><dd class="num" data-conto-sconto>− € 0</dd></div>
+                    <div class="conto-riepilogo__tot"><dt>Da incassare</dt><dd class="num" data-conto-totale>€ 0</dd></div>
+                </dl>
+                <div class="field" data-resto>
+                    <span class="field__label">Contanti ricevuti <small>per calcolare il resto</small></span>
+                    <div class="resto">
+                        <div class="input-group">
+                            <input type="number" class="input" min="0" step="0.5" placeholder="0,00" data-resto-input>
+                            <span class="input-group__add">€</span>
+                        </div>
+                        <span class="resto__valore">Resto <strong data-resto-valore>—</strong></span>
+                    </div>
+                </div>
+            </div>
+            <footer class="modal__foot">
+                <button type="button" class="btn btn--ghost" data-modal-close>Annulla</button>
+                <button type="submit" class="btn btn--brass btn--lg">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Incassa e libera il tavolo
+                </button>
+            </footer>
+        </form>
+    </dialog>
+</main>
+</body>
+</html>

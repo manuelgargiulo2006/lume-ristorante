@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('Accesso staff')}"></head>
+<body class="sito login-page">
+
+<main class="login">
+    <section class="login__brand">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <a class="nav__brand" th:href="@{/}">
+            <svg class="nav__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+            <span>Lume</span>
+        </a>
+        <div class="login__claim">
+            <p class="eyebrow">Gestionale</p>
+            <h1>Sala, cucina<br>e cantina,<br><em>in un’unica luce.</em></h1>
+        </div>
+        <p class="login__small">Comande, prenotazioni, magazzino e statistiche del ristorante.</p>
+    </section>
+
+    <section class="login__panel">
+        <form class="login__form" method="post" th:action="@{/login}">
+            <h2>Accesso staff</h2>
+            <p class="login__sub">Entra con le credenziali che ti ha dato il responsabile.</p>
+
+            <div class="alert alert--errore" th:if="${param.errore}" role="alert">Utente o password non corretti.</div>
+            <div class="alert alert--ok" th:if="${param.uscito}" role="status">Sei uscito. A presto!</div>
+
+            <label class="campo">
+                <span>Utente</span>
+                <input type="text" name="username" autocomplete="username" required autofocus>
+            </label>
+            <label class="campo">
+                <span>Password</span>
+                <span class="campo__pwd">
+                    <input type="password" name="password" autocomplete="current-password" required data-pwd>
+                    <button type="button" class="campo__show" data-pwd-toggle aria-label="Mostra la password">Mostra</button>
+                </span>
+            </label>
+            <button type="submit" class="btn btn--wine btn--lg btn--block">Entra</button>
+
+            <div class="login__demo">
+                <p>Account dimostrativi</p>
+                <div class="login__demo-grid">
+                    <button type="button" data-demo="admin" data-pass="admin1234"><strong>Admin</strong><span>admin · admin1234</span></button>
+                    <button type="button" data-demo="sala" data-pass="sala1234"><strong>Sala</strong><span>sala · sala1234</span></button>
+                    <button type="button" data-demo="cucina" data-pass="cucina1234"><strong>Cucina</strong><span>cucina · cucina1234</span></button>
+                </div>
+            </div>
+            <a class="login__back" th:href="@{/}">← Torna al sito</a>
+        </form>
+    </section>
+</main>
+</body>
+</html>

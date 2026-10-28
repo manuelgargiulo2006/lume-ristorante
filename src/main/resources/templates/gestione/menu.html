@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Menù', ~{::main})}">
+<body>
+<main class="pagina" data-menu-admin>
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow">La carta</p>
+            <h2>Il <em>menù</em></h2>
+            <p>
+                <span th:text="${piattiTotali}">19</span> piatti in <span th:text="${#lists.size(categorie)}">5</span> categorie
+                <th:block th:if="${esauriti > 0}"> · <strong class="testo-danger" th:text="${esauriti} + (${esauriti == 1} ? ' esaurito' : ' esauriti')">1 esaurito</strong></th:block>
+            </p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" th:href="@{/menu}" target="_blank">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#porta'"/></svg>Vedi sul sito
+            </a>
+            <button type="button" class="btn" data-modal-open="modale-categoria" data-categoria-nuova>
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Categoria
+            </button>
+            <a class="btn btn--primary" th:href="@{/gestione/menu/piatti/nuovo}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Nuovo piatto
+            </a>
+        </div>
+    </header>
+
+    <div class="toolbar">
+        <label class="toolbar__cerca">
+            <svg class="i"><use th:href="@{/img/icons.svg} + '#cerca'"/></svg>
+            <input type="search" placeholder="Cerca un piatto…" data-filtra=".menu-tab tbody tr">
+        </label>
+        <p class="toolbar__legenda">
+            <span><i class="fc fc--ok"></i>food cost sotto il 30%</span>
+            <span><i class="fc fc--warn"></i>30–38%</span>
+            <span><i class="fc fc--danger"></i>oltre il 38%</span>
+        </p>
+    </div>
+
+    <section class="card menu-cat" th:each="c, st : ${categorie}" th:id="'categoria-' + ${c.id}"
+             th:with="piatti=${menu.get(c)}">
+        <header class="menu-cat__head">
+            <div class="menu-cat__titolo">
+                <h3 th:text="${c.nome}">Primi</h3>
+                <p>
+                    <span th:if="${c.sottotitolo}" th:text="${c.sottotitolo}">Pasta di Gragnano</span>
+                    <span class="pill pill--plain" th:text="${c.uscita} + 'ª uscita'">1ª uscita</span>
+                </p>
+            </div>
+            <div class="btn-row">
+                <form method="post" th:action="@{/gestione/menu/categorie/{id}/sposta(id=${c.id})}" class="inline">
+                    <button class="btn btn--sm btn--ghost btn--icon" name="direzione" value="-1" th:disabled="${st.first}" title="Sposta su" aria-label="Sposta su">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#su'"/></svg></button>
+                    <button class="btn btn--sm btn--ghost btn--icon" name="direzione" value="1" th:disabled="${st.last}" title="Sposta giù" aria-label="Sposta giù">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#giu'"/></svg></button>
+                </form>
+                <button type="button" class="btn btn--sm btn--ghost btn--icon" data-modal-open="modale-categoria" title="Modifica categoria"
+                        th:attr="data-id=${c.id},data-nome=${c.nome},data-sottotitolo=${c.sottotitolo},data-uscita=${c.uscita},data-azione=@{/gestione/menu/categorie/{id}(id=${c.id})}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg></button>
+                <form method="post" class="inline" th:action="@{/gestione/menu/categorie/{id}/elimina(id=${c.id})}"
+                      th:attr="data-conferma='Eliminare la categoria «' + ${c.nome} + '»?'">
+                    <button class="btn btn--sm btn--ghost btn--icon" title="Elimina categoria" aria-label="Elimina categoria">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg></button>
+                </form>
+                <a class="btn btn--sm" th:href="@{/gestione/menu/piatti/nuovo(categoria=${c.id})}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Piatto</a>
+            </div>
+        </header>
+
+        <div class="table-wrap" th:unless="${piatti == null or #lists.isEmpty(piatti)}">
+            <table class="tabella menu-tab">
+                <thead>
+                <tr>
+                    <th>Piatto</th>
+                    <th class="r">Prezzo</th>
+                    <th>Food cost</th>
+                    <th class="c">Tempo</th>
+                    <th class="c">Disponibile</th>
+                    <th></th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="p : ${piatti}" th:classappend="${!p.disponibile} ? 'is-off'">
+                    <td>
+                        <a class="menu-tab__nome" th:href="@{/gestione/menu/piatti/{id}(id=${p.id})}" th:text="${p.nome}">Genovese</a>
+                        <span class="menu-tab__tags">
+                            <span class="tag tag--firma" th:if="${p.inEvidenza}">Firma</span>
+                            <span class="tag tag--veg" th:if="${p.vegano}">Vegano</span>
+                            <span class="tag tag--veg" th:if="${p.vegetariano and !p.vegano}">Vegetariano</span>
+                            <span class="tag" th:each="a : ${p.allergeni}" th:text="${a.tone}" th:title="${a.label}">G</span>
+                        </span>
+                    </td>
+                    <td class="r strong num" th:text="${@fmt.euro(p.prezzo)}">€ 19,00</td>
+                    <td>
+                        <div class="fc-cella" th:if="${!#lists.isEmpty(p.ricetta)}"
+                             th:with="perc=${p.foodCostPercentuale}">
+                            <span class="fc" th:classappend="${perc < 30} ? 'fc--ok' : (${perc <= 38} ? 'fc--warn' : 'fc--danger')"></span>
+                            <span class="num"><b th:text="${perc} + '%'">24%</b> <small th:text="${@fmt.euro(p.foodCost)}">€ 4,50</small></span>
+                        </div>
+                        <span class="faint" th:if="${#lists.isEmpty(p.ricetta)}">— senza ricetta</span>
+                    </td>
+                    <td class="c num" th:text="${p.tempoPreparazione} + '′'">15′</td>
+                    <td class="c">
+                        <form method="post" th:action="@{/gestione/menu/piatti/{id}/disponibilita(id=${p.id})}" data-disponibilita>
+                            <label class="switch" th:title="${p.disponibile} ? 'Segna come esaurito' : 'Rimetti nel menù'">
+                                <input type="checkbox" th:checked="${p.disponibile}" th:attr="aria-label='Disponibile: ' + ${p.nome}">
+                                <span class="switch__track"></span>
+                            </label>
+                        </form>
+                    </td>
+                    <td class="r nowrap">
+                        <a class="btn btn--sm btn--ghost btn--icon" th:href="@{/gestione/menu/piatti/{id}(id=${p.id})}" title="Modifica" aria-label="Modifica">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg></a>
+                        <form method="post" class="inline" th:action="@{/gestione/menu/piatti/{id}/elimina(id=${p.id})}"
+                              th:attr="data-conferma='Eliminare «' + ${p.nome} + '» dal menù?'">
+                            <button class="btn btn--sm btn--ghost btn--icon" title="Elimina" aria-label="Elimina">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="empty" th:if="${piatti == null or #lists.isEmpty(piatti)}">
+            <strong>Nessun piatto in questa categoria</strong>
+            <a class="link" th:href="@{/gestione/menu/piatti/nuovo(categoria=${c.id})}">Aggiungi il primo</a>
+        </div>
+    </section>
+
+    <!-- ===== nuova / modifica categoria ===== -->
+    <dialog class="modal" id="modale-categoria" data-modale-categoria th:attr="data-nuova=@{/gestione/menu/categorie}">
+        <form method="post" th:action="@{/gestione/menu/categorie}">
+            <header class="modal__head">
+                <h3 data-titolo>Nuova categoria</h3>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Chiudi"><svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+            </header>
+            <div class="modal__body">
+                <label class="field"><span>Nome</span><input type="text" name="nome" required maxlength="60"></label>
+                <label class="field"><span>Sottotitolo <small>facoltativo</small></span><input type="text" name="sottotitolo" maxlength="120"></label>
+                <div class="field">
+                    <span class="field__label">In quale uscita la serve la cucina?</span>
+                    <div class="seg">
+                        <label><input type="radio" name="uscita" value="1" checked><span>1ª · antipasti e primi</span></label>
+                        <label><input type="radio" name="uscita" value="2"><span>2ª · secondi</span></label>
+                        <label><input type="radio" name="uscita" value="3"><span>3ª · dolci</span></label>
+                    </div>
+                </div>
+            </div>
+            <footer class="modal__foot">
+                <button type="button" class="btn btn--ghost" data-modal-close>Annulla</button>
+                <button type="submit" class="btn btn--primary">Salva</button>
+            </footer>
+        </form>
+    </dialog>
+</main>
+</body>
+</html>

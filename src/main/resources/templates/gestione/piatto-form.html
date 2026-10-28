@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout(${piatto == null} ? 'Nuovo piatto' : ${piatto.nome}, ~{::main})}">
+<body>
+<main class="pagina pagina--stretta" data-piatto-form>
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/menu}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Menù
+            </a>
+            <h2 th:if="${piatto == null}">Nuovo <em>piatto</em></h2>
+            <h2 th:unless="${piatto == null}" th:text="${piatto.nome}">Genovese</h2>
+        </div>
+    </header>
+
+    <form method="post" class="form-layout" th:object="${form}" novalidate data-ricetta-form
+          th:action="${piatto == null} ? @{/gestione/menu/piatti/nuovo} : @{/gestione/menu/piatti/{id}(id=${piatto.id})}">
+
+        <div class="card">
+            <div class="card__body form">
+                <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                    <span th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</span>
+                </div>
+
+                <fieldset class="form-sez">
+                    <legend>Il piatto</legend>
+                    <div class="form-grid">
+                        <label class="field full">
+                            <span>Nome</span>
+                            <input type="text" th:field="*{nome}" maxlength="100" th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'" data-anteprima="nome">
+                            <em class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></em>
+                        </label>
+                        <label class="field">
+                            <span>Categoria</span>
+                            <select th:field="*{categoriaId}" th:classappend="${#fields.hasErrors('categoriaId')} ? 'is-invalid'">
+                                <option value="">Scegli…</option>
+                                <option th:each="c : ${categorie}" th:value="${c.id}" th:text="${c.nome}">Primi</option>
+                            </select>
+                            <em class="field-error" th:if="${#fields.hasErrors('categoriaId')}" th:errors="*{categoriaId}"></em>
+                        </label>
+                        <div class="form-grid form-grid--inner">
+                            <label class="field">
+                                <span>Prezzo</span>
+                                <div class="input-group">
+                                    <input type="number" th:field="*{prezzo}" step="0.5" min="0.5" max="999" class="input"
+                                           th:classappend="${#fields.hasErrors('prezzo')} ? 'is-invalid'" data-prezzo>
+                                    <span class="input-group__add">€</span>
+                                </div>
+                                <em class="field-error" th:if="${#fields.hasErrors('prezzo')}" th:errors="*{prezzo}"></em>
+                            </label>
+                            <label class="field">
+                                <span>Preparazione</span>
+                                <div class="input-group">
+                                    <input type="number" th:field="*{tempoPreparazione}" min="1" max="240" class="input">
+                                    <span class="input-group__add">min</span>
+                                </div>
+                                <em class="field-error" th:if="${#fields.hasErrors('tempoPreparazione')}" th:errors="*{tempoPreparazione}"></em>
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>
+                        Il racconto
+                        <button type="button" class="btn btn--sm btn--ai" data-ai th:attr="data-url=@{/api/gestione/ai/piatto}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#ai'"/></svg><span>Scrivi con l'AI</span>
+                        </button>
+                    </legend>
+                    <div class="form-grid">
+                        <label class="field full">
+                            <span>Descrizione per il menù <small data-conta-caratteri="600">0/600</small></span>
+                            <textarea th:field="*{descrizione}" rows="3" maxlength="600" data-anteprima="descrizione"
+                                      placeholder="Come lo racconteresti al tavolo?"></textarea>
+                            <em class="field-error" th:if="${#fields.hasErrors('descrizione')}" th:errors="*{descrizione}"></em>
+                        </label>
+                        <label class="field full">
+                            <span>Abbinamento consigliato</span>
+                            <input type="text" th:field="*{abbinamento}" maxlength="200" placeholder="es. Fiano di Avellino DOCG: sapido e minerale" data-anteprima="abbinamento">
+                        </label>
+                    </div>
+                    <p class="field__hint ai-hint">L'AI usa nome, categoria e ingredienti della ricetta per proporre una descrizione e un vino campano. Puoi sempre correggere il testo.</p>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>Ricetta e food cost</legend>
+                    <div class="ricetta" data-ricetta>
+                        <div class="ricetta__head">
+                            <span>Ingrediente</span><span>Quantità per porzione</span><span class="r">Costo</span><span></span>
+                        </div>
+                        <div class="ricetta__riga" th:each="r, st : *{ricetta}" data-riga>
+                            <select class="input" th:name="'ricetta[' + ${st.index} + '].ingredienteId'" data-ingr>
+                                <option value="">Scegli…</option>
+                                <option th:each="i : ${ingredienti}" th:value="${i.id}" th:selected="${i.id == r.ingredienteId}"
+                                        th:attr="data-costo=${i.costoUnitario},data-unita=${i.unita.label}" th:text="${i.nome}">Polpo</option>
+                            </select>
+                            <div class="input-group">
+                                <input type="number" class="input" step="0.001" min="0" th:name="'ricetta[' + ${st.index} + '].quantita'" th:value="${r.quantita}" data-qta>
+                                <span class="input-group__add" data-unita>kg</span>
+                            </div>
+                            <span class="ricetta__costo num r" data-costo-riga>€ 0,00</span>
+                            <button type="button" class="btn btn--sm btn--ghost btn--icon" data-togli aria-label="Togli ingrediente">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+                        </div>
+                        <template data-riga-modello>
+                            <div class="ricetta__riga" data-riga>
+                                <select class="input" data-ingr>
+                                    <option value="">Scegli…</option>
+                                    <option th:each="i : ${ingredienti}" th:value="${i.id}"
+                                            th:attr="data-costo=${i.costoUnitario},data-unita=${i.unita.label}" th:text="${i.nome}">Polpo</option>
+                                </select>
+                                <div class="input-group">
+                                    <input type="number" class="input" step="0.001" min="0" data-qta>
+                                    <span class="input-group__add" data-unita>—</span>
+                                </div>
+                                <span class="ricetta__costo num r" data-costo-riga>€ 0,00</span>
+                                <button type="button" class="btn btn--sm btn--ghost btn--icon" data-togli aria-label="Togli ingrediente">
+                                    <svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+                            </div>
+                        </template>
+                        <button type="button" class="btn btn--sm ricetta__aggiungi" data-aggiungi-riga>
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Aggiungi ingrediente</button>
+                        <p class="field__hint">Le quantità sono nell'unità di magazzino dell'ingrediente (es. 0,120 kg). Quando il conto viene chiuso, il magazzino viene scaricato in automatico.</p>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>Allergeni</legend>
+                    <div class="chips">
+                        <label class="chip" th:each="a : ${allergeni}">
+                            <input type="checkbox" th:field="*{allergeni}" th:value="${a}">
+                            <b th:text="${a.tone}">G</b><span th:text="${a.label}">Glutine</span>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>Opzioni</legend>
+                    <div class="opzioni">
+                        <label class="switch"><input type="checkbox" th:field="*{disponibile}"><span class="switch__track"></span>
+                            <span>Disponibile oggi<small>Se spento il piatto sparisce dal sito e dalla comanda</small></span></label>
+                        <label class="switch"><input type="checkbox" th:field="*{inEvidenza}"><span class="switch__track"></span>
+                            <span>Piatto firma<small>Compare in evidenza nella home del sito</small></span></label>
+                        <label class="switch"><input type="checkbox" th:field="*{vegetariano}"><span class="switch__track"></span>
+                            <span>Vegetariano</span></label>
+                        <label class="switch"><input type="checkbox" th:field="*{vegano}"><span class="switch__track"></span>
+                            <span>Vegano</span></label>
+                    </div>
+                </fieldset>
+            </div>
+            <footer class="card__foot">
+                <a class="btn btn--ghost" th:href="@{/gestione/menu}">Annulla</a>
+                <button type="submit" class="btn btn--primary">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>
+                    <span th:text="${piatto == null} ? 'Aggiungi al menù' : 'Salva modifiche'">Salva</span>
+                </button>
+            </footer>
+        </div>
+
+        <aside class="form-aside">
+            <section class="card foodcost" data-foodcost>
+                <div class="card__body">
+                    <p class="eyebrow">Food cost</p>
+                    <div class="foodcost__gauge">
+                        <svg viewBox="0 0 120 70" aria-hidden="true">
+                            <path d="M10 62 A50 50 0 0 1 110 62" class="gauge__bg"/>
+                            <path d="M10 62 A50 50 0 0 1 110 62" class="gauge__val" data-gauge pathLength="100"/>
+                        </svg>
+                        <p class="foodcost__perc"><span data-fc-perc>—</span><small>del prezzo</small></p>
+                    </div>
+                    <dl class="foodcost__dati">
+                        <div><dt>Costo ingredienti</dt><dd class="num" data-fc-costo>€ 0,00</dd></div>
+                        <div><dt>Prezzo di vendita</dt><dd class="num" data-fc-prezzo>€ 0,00</dd></div>
+                        <div class="foodcost__margine"><dt>Margine per porzione</dt><dd class="num" data-fc-margine>€ 0,00</dd></div>
+                    </dl>
+                    <p class="foodcost__nota" data-fc-nota>Aggiungi gli ingredienti per calcolare il food cost.</p>
+                </div>
+            </section>
+
+            <section class="card anteprima">
+                <div class="card__body">
+                    <p class="eyebrow">Anteprima sul sito</p>
+                    <div class="anteprima__box">
+                        <div class="anteprima__riga">
+                            <strong data-ant="nome">Nome del piatto</strong>
+                            <span class="anteprima__leader"></span>
+                            <span data-ant="prezzo">—</span>
+                        </div>
+                        <p data-ant="descrizione">La descrizione comparirà qui.</p>
+                        <p class="anteprima__vino" data-ant="abbinamento"></p>
+                    </div>
+                </div>
+            </section>
+        </aside>
+    </form>
+</main>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout(${p == null} ? 'Nuova prenotazione' : 'Prenotazione ' + ${p.codice}, ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/prenotazioni(data=${form.data})}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Agenda
+            </a>
+            <h2 th:if="${p == null}">Nuova <em>prenotazione</em></h2>
+            <h2 th:unless="${p == null}" th:text="${p.nome}">Rossi</h2>
+        </div>
+        <div class="page-head__actions" th:unless="${p == null}">
+            <span class="pill" th:classappend="'pill--' + ${p.stato.tone}" th:text="${p.stato.label}">Confermata</span>
+        </div>
+    </header>
+
+    <div class="form-layout">
+        <form method="post" class="card form" th:object="${form}" novalidate
+              th:action="${p == null} ? @{/gestione/prenotazioni/nuova} : @{/gestione/prenotazioni/{id}(id=${p.id})}">
+            <div class="card__body form">
+                <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                    <span th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</span>
+                </div>
+
+                <fieldset class="form-sez">
+                    <legend>Quando</legend>
+                    <div class="form-grid form-grid--3">
+                        <label class="field">
+                            <span>Giorno</span>
+                            <input type="date" th:field="*{data}" th:classappend="${#fields.hasErrors('data')} ? 'is-invalid'" required>
+                            <em class="field-error" th:if="${#fields.hasErrors('data')}" th:errors="*{data}"></em>
+                        </label>
+                        <label class="field">
+                            <span>Orario</span>
+                            <select th:field="*{ora}" th:classappend="${#fields.hasErrors('ora')} ? 'is-invalid'">
+                                <option th:each="o : ${orari}" th:value="${#temporals.format(o, 'HH:mm')}"
+                                        th:text="${#temporals.format(o, 'HH:mm')} + (${o.hour < 17} ? ' · pranzo' : ' · cena')">20:30</option>
+                            </select>
+                            <em class="field-error" th:if="${#fields.hasErrors('ora')}" th:errors="*{ora}"></em>
+                        </label>
+                        <label class="field">
+                            <span>Persone</span>
+                            <div class="stepper" data-stepper>
+                                <button type="button" data-delta="-1" aria-label="Meno"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                                <input type="number" th:field="*{persone}" min="1" max="12">
+                                <button type="button" data-delta="1" aria-label="Più"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                            </div>
+                            <em class="field-error" th:if="${#fields.hasErrors('persone')}" th:errors="*{persone}"></em>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>Cliente</legend>
+                    <div class="form-grid">
+                        <label class="field full">
+                            <span>Nome e cognome</span>
+                            <input type="text" th:field="*{nome}" maxlength="80" th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'" autofocus>
+                            <em class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></em>
+                        </label>
+                        <label class="field">
+                            <span>Telefono</span>
+                            <input type="tel" th:field="*{telefono}" th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'">
+                            <em class="field-error" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}"></em>
+                        </label>
+                        <label class="field">
+                            <span>Email <small>facoltativa</small></span>
+                            <input type="email" th:field="*{email}" th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                            <em class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></em>
+                        </label>
+                        <label class="field full">
+                            <span>Note <small>allergie, occasione, richieste</small></span>
+                            <textarea th:field="*{note}" rows="3" maxlength="400"></textarea>
+                        </label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="form-sez">
+                    <legend>Tavolo</legend>
+                    <div class="form-grid">
+                        <label class="field">
+                            <span>Tavolo assegnato</span>
+                            <select th:field="*{tavoloId}">
+                                <option value="">Scegli in automatico</option>
+                                <option th:each="t : ${tavoli}" th:value="${t.id}"
+                                        th:text="'Tavolo ' + ${t.numero} + ' · ' + ${t.posti} + ' posti · ' + ${t.zona.label}">Tavolo 3</option>
+                            </select>
+                            <span class="field__hint">In automatico viene scelto il tavolo libero più adatto al numero di persone.</span>
+                        </label>
+                        <div class="field" th:if="${p == null}">
+                            <span class="field__label">Ricevuta tramite</span>
+                            <div class="seg">
+                                <label th:each="o : ${origini}" th:if="${o.name() != 'ONLINE'}">
+                                    <input type="radio" name="origine" th:value="${o}" th:checked="${o.name() == 'TELEFONO'}">
+                                    <span th:text="${o.label}">Telefono</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </fieldset>
+            </div>
+            <footer class="card__foot">
+                <a class="btn btn--ghost" th:href="@{/gestione/prenotazioni(data=${form.data})}">Annulla</a>
+                <button type="submit" class="btn btn--primary">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>
+                    <span th:text="${p == null} ? 'Salva prenotazione' : 'Salva modifiche'">Salva</span>
+                </button>
+            </footer>
+        </form>
+
+        <aside class="form-aside" th:unless="${p == null}">
+            <section class="card">
+                <div class="card__body info-lista">
+                    <div><span>Codice</span><strong class="mono" th:text="${p.codice}">LM-XXXXX</strong></div>
+                    <div><span>Ricevuta</span><strong th:text="${p.origine.label} + ', ' + ${#temporals.format(p.creataIl, 'd MMM HH:mm')}">Sito</strong></div>
+                    <div th:if="${p.email}"><span>Email</span><a th:href="'mailto:' + ${p.email}" th:text="${p.email}">mail</a></div>
+                    <div><span>Telefono</span><a th:href="'tel:' + ${p.telefono}" th:text="${p.telefono}">333</a></div>
+                </div>
+                <div class="card__foot" th:if="${p.attiva and p.stato.name() != 'ARRIVATA'}">
+                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" data-conferma="Cancellare la prenotazione?">
+                        <button class="btn btn--sm btn--danger" name="stato" value="CANCELLATA">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg>Cancella prenotazione</button>
+                    </form>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

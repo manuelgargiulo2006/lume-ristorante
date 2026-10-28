@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('Cucina campana contemporanea')}"></head>
+<body class="sito">
+
+<header th:replace="~{fragments/sito :: nav('home')}"></header>
+
+<main>
+    <!-- ===== Apertura ===== -->
+    <section class="hero">
+        <div class="hero__glow" aria-hidden="true"></div>
+        <div class="hero__inner">
+            <p class="eyebrow reveal">Chiaia · Napoli</p>
+            <h1 class="hero__title reveal">Lume</h1>
+            <p class="hero__lead reveal">Cucina campana contemporanea. Il mare del golfo, gli orti vesuviani,
+                il fuoco lento della tradizione, letti con occhi di oggi.</p>
+            <div class="hero__actions reveal">
+                <a class="btn btn--brass btn--lg" th:href="@{/prenota}">Prenota un tavolo</a>
+                <a class="btn btn--ghost btn--lg" th:href="@{/menu}">Scopri il menù</a>
+            </div>
+        </div>
+        <dl class="hero__facts">
+            <div><dt>Coperti</dt><dd>40</dd></div>
+            <div><dt>A Chiaia dal</dt><dd>2019</dd></div>
+            <div><dt>Etichette in cantina</dt><dd>320</dd></div>
+            <div><dt>Aperti</dt><dd>Mar – Dom</dd></div>
+        </dl>
+    </section>
+
+    <!-- ===== Manifesto ===== -->
+    <section class="manifesto wrap">
+        <p class="eyebrow">La cucina</p>
+        <blockquote class="manifesto__quote reveal">
+            «Cuciniamo quello che il golfo ci porta la mattina, e lo serviamo la sera
+            <em>con la stessa luce</em> con cui l'abbiamo trovato.»
+        </blockquote>
+        <div class="manifesto__cols">
+            <p>Ogni piatto nasce da pochi ingredienti scelti ogni giorno: pescato di Pozzuoli,
+                pomodorini del piennolo, latticini di bufala dalla piana del Sele, agrumi della costiera.</p>
+            <p>Il menù cambia con le stagioni, la cantina parla soprattutto campano: Fiano, Greco, Aglianico,
+                e qualche bollicina che arriva da più lontano.</p>
+            <p class="manifesto__firma">Chef <strong>Antonio De Luca</strong></p>
+        </div>
+    </section>
+
+    <!-- ===== Piatti firma ===== -->
+    <section class="firma" th:if="${!#lists.isEmpty(firma)}">
+        <div class="wrap">
+            <div class="section-head">
+                <p class="eyebrow">Piatti firma</p>
+                <h2 class="section-title">Quello che <em>ci</em> racconta</h2>
+            </div>
+            <ol class="firma__list">
+                <li class="firma__item reveal" th:each="p, st : ${firma}">
+                    <span class="firma__num" th:text="${#numbers.formatInteger(st.count, 2)}">01</span>
+                    <div class="firma__body">
+                        <p class="firma__cat" th:text="${p.categoria.nome}">Primi</p>
+                        <h3 th:text="${p.nome}">Nome piatto</h3>
+                        <p class="firma__desc" th:text="${p.descrizione}">Descrizione</p>
+                        <p class="firma__wine" th:if="${p.abbinamento}">
+                            <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#calice'"/></svg>
+                            <span th:text="${p.abbinamento}">Vino</span>
+                        </p>
+                    </div>
+                    <span class="firma__price" th:text="${#numbers.formatDecimal(p.prezzo, 1, 'POINT', 0, 'COMMA')}">28</span>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <!-- ===== Il menù in breve ===== -->
+    <section class="carta wrap">
+        <div class="section-head">
+            <p class="eyebrow">La carta</p>
+            <h2 class="section-title">Un menù che <em>cambia</em> con il mare</h2>
+        </div>
+        <div class="carta__grid">
+            <a class="carta__cat reveal" th:each="voce : ${menu}" th:href="@{/menu} + '#cat-' + ${voce.key.id}">
+                <span class="carta__count" th:text="${#lists.size(voce.value)}">4</span>
+                <h3 th:text="${voce.key.nome}">Primi</h3>
+                <p th:text="${voce.key.sottotitolo}">Sottotitolo</p>
+                <span class="carta__link">Vedi i piatti
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#freccia'"/></svg></span>
+            </a>
+        </div>
+    </section>
+
+    <!-- ===== Visita ===== -->
+    <section class="visita">
+        <div class="wrap visita__inner">
+            <div>
+                <p class="eyebrow">Vieni a trovarci</p>
+                <h2 class="section-title">Un tavolo,<br><em>una sera</em> a Chiaia</h2>
+                <p class="visita__text">Prenota online in meno di un minuto: vedi subito gli orari liberi
+                    e ricevi il codice per gestire la prenotazione. Per gruppi oltre le sei persone
+                    ti richiamiamo noi per organizzare la serata.</p>
+                <a class="btn btn--brass btn--lg" th:href="@{/prenota}">Prenota ora</a>
+            </div>
+            <ul class="visita__info">
+                <li>
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#pin'"/></svg>
+                    <div><strong>Via Chiaia 148, Napoli</strong><span>A due passi da Piazza dei Martiri</span></div>
+                </li>
+                <li>
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#orologio'"/></svg>
+                    <div><strong>Martedì – Domenica</strong><span>Pranzo 12:30 – 15:00 · Cena 19:30 – 23:30</span></div>
+                </li>
+                <li>
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#telefono'"/></svg>
+                    <div><strong>081 000 0148</strong><span>Lunedì chiuso per riposo</span></div>
+                </li>
+            </ul>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments/sito :: footer}"></footer>
+</body>
+</html>

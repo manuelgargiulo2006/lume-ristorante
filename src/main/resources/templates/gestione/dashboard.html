@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/app :: layout('Panoramica', ~{::main})}">
+<body>
+<main class="pagina" data-refresh="60">
+
+    <!-- ===== saluto ===== -->
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow" th:text="${#temporals.format(#temporals.createToday(), 'EEEE d MMMM')}">venerdì 23 ottobre</p>
+            <h2>
+                <span th:text="${#temporals.hour(#temporals.createNow()) < 13} ? 'Buongiorno' : (${#temporals.hour(#temporals.createNow()) < 18} ? 'Buon pomeriggio' : 'Buonasera')">Buonasera</span>,
+                <em th:text="${#strings.substringBefore(utente.nomeCompleto + ' ', ' ')}">Giulia</em>
+            </h2>
+            <p th:unless="${isCucina}">
+                <span th:text="${tavoliOccupati}">3</span> tavoli occupati con <span th:text="${copertiInSala}">12</span> coperti,
+                <span th:text="${copertiPrenotati}">40</span> coperti prenotati oggi.
+            </p>
+            <p th:if="${isCucina}"><span th:text="${#lists.size(tickets)}">3</span> comande aperte in cucina.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" sec:authorize="hasAnyRole('ADMIN','SALA')" th:href="@{/gestione/prenotazioni/nuova}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Prenotazione
+            </a>
+            <a class="btn btn--primary" sec:authorize="hasAnyRole('ADMIN','SALA')" th:href="@{/gestione/sala}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#sala'"/></svg>Vai alla sala
+            </a>
+            <a class="btn btn--primary" th:if="${isCucina}" th:href="@{/gestione/cucina}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#cucina'"/></svg>Apri il monitor
+            </a>
+        </div>
+    </header>
+
+    <!-- ===== numeri del giorno ===== -->
+    <section class="kpis" th:unless="${isCucina}">
+        <article class="card kpi kpi--accent">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#conto'"/></svg>Incasso di oggi</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(oggi.incasso)}">€ 1.240,00</p>
+            <p class="kpi__foot">
+                <span th:if="${oggi.variazione != null}" class="delta" th:classappend="${oggi.variazione >= 0} ? 'delta--su' : 'delta--giu'"
+                      th:text="(${oggi.variazione >= 0} ? '▲ ' : '▼ ') + ${T(java.lang.Math).abs(oggi.variazione)} + '%'">▲ 12%</span>
+                <span th:text="${oggi.variazione != null} ? 'rispetto a ieri a quest’ora' : (${oggi.conti == 0} ? 'Nessun conto chiuso finora' : 'Ieri a quest’ora nessun conto')">rispetto a ieri</span>
+            </p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#persone'"/></svg>Coperti serviti</p>
+            <p class="kpi__value num"><span th:text="${oggi.coperti}">38</span><small th:text="${oggi.conti} + ' conti'">12 conti</small></p>
+            <p class="kpi__foot">In sala adesso: <strong th:text="${copertiInSala}">12</strong></p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#carta'"/></svg>Scontrino medio</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(oggi.scontrinoMedio)}">€ 98,00</p>
+            <p class="kpi__foot" th:text="${@fmt.euro(oggi.spesaPerCoperto)} + ' a coperto'">€ 45 a coperto</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#grafico'"/></svg>Ultimi 7 giorni</p>
+            <p class="kpi__value num" th:text="${@fmt.euroTondo(settimana.incasso)}">€ 9.400</p>
+            <p class="kpi__foot">
+                <span th:if="${settimana.variazione != null}" class="delta" th:classappend="${settimana.variazione >= 0} ? 'delta--su' : 'delta--giu'"
+                      th:text="(${settimana.variazione >= 0} ? '▲ ' : '▼ ') + ${T(java.lang.Math).abs(settimana.variazione)} + '%'">▲ 4%</span>
+                <span th:text="${settimana.coperti} + ' coperti'">300 coperti</span>
+            </p>
+        </article>
+    </section>
+
+    <div class="grid grid--main">
+        <!-- colonna sinistra -->
+        <div class="grid">
+            <section class="card" th:unless="${isCucina}">
+                <header class="card__head">
+                    <h3>Incassi delle ultime due settimane</h3>
+                    <a class="link" sec:authorize="hasRole('ADMIN')" th:href="@{/gestione/statistiche}">Statistiche →</a>
+                </header>
+                <div class="card__body">
+                    <div class="chart" data-chart="barre" data-euro data-evidenzia-ultimo>
+                        <script type="application/json" th:inline="javascript">/*[[${incassi}]]*/ []</script>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" sec:authorize="hasAnyRole('ADMIN','SALA')">
+                <header class="card__head">
+                    <h3>Sala in tempo reale</h3>
+                    <a class="link" th:href="@{/gestione/sala}">Apri la mappa →</a>
+                </header>
+                <div class="card__body">
+                    <div class="legenda-sala">
+                        <span th:each="r : ${riepilogoSala}" class="pill" th:classappend="'pill--' + ${r.key}">
+                            <b th:text="${r.value}">3</b>&nbsp;<span th:text="${r.key == 'libero'} ? 'liberi' : (${r.key == 'prenotato'} ? 'prenotati' : (${r.key == 'occupato'} ? 'occupati' : (${r.key == 'pronto'} ? 'piatti pronti' : 'al conto')))">liberi</span>
+                        </span>
+                    </div>
+                    <div class="mini-sala">
+                        <a th:each="v : ${sala}" class="mini-tavolo" th:classappend="'is-' + ${v.stato()}"
+                           th:href="${v.ordine() != null} ? @{/gestione/ordini/{id}(id=${v.ordine().id})} : @{/gestione/sala(tavolo=${v.tavolo().id})}"
+                           th:title="'Tavolo ' + ${v.tavolo().numero} + ' · ' + ${v.etichettaStato()}">
+                            <strong th:text="${v.tavolo().numero}">3</strong>
+                            <small th:if="${v.ordine() != null}" th:text="${v.ordine().minutiAlTavolo} + '′'">40′</small>
+                            <small th:if="${v.ordine() == null and v.prossima() != null}" th:text="${#temporals.format(v.prossima().ora, 'HH:mm')}">20:30</small>
+                            <small th:if="${v.ordine() == null and v.prossima() == null}" th:text="${v.tavolo().posti} + 'p'">4p</small>
+                        </a>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" sec:authorize="hasRole('ADMIN')">
+                <header class="card__head">
+                    <h3>I piatti più venduti della settimana</h3>
+                </header>
+                <div class="card__body">
+                    <ol class="classifica" th:unless="${#lists.isEmpty(top)}">
+                        <li th:each="t, st : ${top}">
+                            <span class="classifica__pos" th:text="${st.count}">1</span>
+                            <div class="classifica__main">
+                                <div class="classifica__row">
+                                    <strong th:text="${t.nome}">Genovese</strong>
+                                    <span class="num" th:text="${t.porzioni} + ' porz.'">42 porz.</span>
+                                </div>
+                                <div class="barra barra--wine"><span th:style="'width:' + ${t.percentuale} + '%'"></span></div>
+                                <small th:text="${t.categoria} + ' · ' + ${@fmt.euroTondo(t.incasso)}">Primi · € 800</small>
+                            </div>
+                        </li>
+                    </ol>
+                    <div class="empty" th:if="${#lists.isEmpty(top)}"><strong>Nessuna vendita negli ultimi 7 giorni</strong></div>
+                </div>
+            </section>
+        </div>
+
+        <!-- colonna destra -->
+        <div class="grid">
+            <section class="card" sec:authorize="hasAnyRole('ADMIN','SALA')">
+                <header class="card__head">
+                    <h3>Prossimi arrivi</h3>
+                    <a class="link" th:href="@{/gestione/prenotazioni}">Agenda →</a>
+                </header>
+                <div class="card__body--flush">
+                    <ul class="list" th:unless="${#lists.isEmpty(arrivi)}">
+                        <li th:each="p : ${arrivi}">
+                            <span class="ora-badge" th:text="${#temporals.format(p.ora, 'HH:mm')}">20:30</span>
+                            <div class="list__main">
+                                <strong th:text="${p.nome}">Rossi</strong>
+                                <small>
+                                    <span th:text="${p.persone} + (${p.persone == 1} ? ' persona' : ' persone')">4 persone</span>
+                                    <span th:if="${p.tavolo}" th:text="' · tavolo ' + ${p.tavolo.numero}">· tavolo 3</span>
+                                    <span th:if="${p.note}" th:title="${p.note}"> · nota</span>
+                                </small>
+                            </div>
+                            <span class="pill" th:classappend="'pill--' + ${p.stato.tone}" th:text="${p.stato.label}">Confermata</span>
+                        </li>
+                    </ul>
+                    <div class="empty" th:if="${#lists.isEmpty(arrivi)}">
+                        <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg></span>
+                        <strong>Nessun altro arrivo previsto oggi</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <header class="card__head">
+                    <h3>In cucina</h3>
+                    <a class="link" th:href="@{/gestione/cucina}">Monitor →</a>
+                </header>
+                <div class="card__body--flush">
+                    <ul class="list" th:unless="${#lists.isEmpty(tickets)}">
+                        <li th:each="t : ${tickets}">
+                            <span class="tavolo-badge" th:classappend="'is-' + ${t.urgenza()}" th:text="${t.tavolo()}">3</span>
+                            <div class="list__main">
+                                <strong th:text="${#lists.size(t.righe())} + (${#lists.size(t.righe()) == 1} ? ' piatto' : ' piatti') + ' · ' + ${t.coperti()} + ' coperti'">4 piatti</strong>
+                                <small th:text="${t.cameriere()}">Marco</small>
+                            </div>
+                            <div class="list__side">
+                                <strong class="num" th:text="${t.minutiAttesa()} + ' min'">12 min</strong>
+                                <small class="pill pill--plain" th:classappend="${t.urgenza() == 'ritardo'} ? 'pill--danger' : (${t.urgenza() == 'attenzione'} ? 'pill--warn' : (${t.urgenza() == 'pronto'} ? 'pill--ok' : ''))"
+                                       th:text="${t.urgenza() == 'pronto'} ? 'pronto' : (${t.urgenza() == 'ritardo'} ? 'in ritardo' : (${t.urgenza() == 'attenzione'} ? 'attenzione' : 'in orario'))">in orario</small>
+                            </div>
+                        </li>
+                    </ul>
+                    <div class="empty" th:if="${#lists.isEmpty(tickets)}">
+                        <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#cucina'"/></svg></span>
+                        <strong>Nessuna comanda in preparazione</strong>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card" sec:authorize="hasAnyRole('ADMIN','CUCINA')">
+                <header class="card__head">
+                    <h3>Avvisi</h3>
+                </header>
+                <div class="card__body--flush">
+                    <ul class="list">
+                        <li th:each="i : ${sottoScorta}">
+                            <span class="notif__icon" th:classappend="${i.esaurito} ? 'is-danger' : 'is-warn'">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                            </span>
+                            <div class="list__main">
+                                <strong th:text="${i.nome}">Polpo</strong>
+                                <small th:text="'Restano ' + ${@fmt.quantita(i.scorta)} + ' ' + ${i.unita.label} + ' · minimo ' + ${@fmt.quantita(i.sogliaMinima)}">Restano 1 kg</small>
+                            </div>
+                            <span class="pill" th:classappend="${i.esaurito} ? 'pill--danger' : 'pill--warn'" th:text="${i.esaurito} ? 'Esaurito' : 'Sotto scorta'">Sotto scorta</span>
+                        </li>
+                        <li th:if="${esauriti > 0}" sec:authorize="hasRole('ADMIN')">
+                            <span class="notif__icon notif__icon--danger"><svg class="i"><use th:href="@{/img/icons.svg} + '#menu'"/></svg></span>
+                            <div class="list__main">
+                                <strong th:text="${esauriti} + (${esauriti == 1} ? ' piatto non disponibile' : ' piatti non disponibili')">1 piatto</strong>
+                                <small>Nascosti dal menù del sito</small>
+                            </div>
+                            <a class="btn btn--sm" th:href="@{/gestione/menu}">Menù</a>
+                        </li>
+                    </ul>
+                    <div class="empty" th:if="${#lists.isEmpty(sottoScorta) and esauriti == 0}">
+                        <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg></span>
+                        <strong>Nessun avviso</strong>
+                    </div>
+                </div>
+                <div class="card__foot" th:unless="${#lists.isEmpty(sottoScorta)}">
+                    <a class="btn btn--sm" th:href="@{/gestione/magazzino/ordini-fornitori}">
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#camion'"/></svg>Prepara gli ordini
+                    </a>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+</body>
+</html>

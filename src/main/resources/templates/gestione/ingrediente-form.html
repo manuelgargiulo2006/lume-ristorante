@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout(${ingrediente == null} ? 'Nuovo ingrediente' : ${ingrediente.nome}, ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back" th:href="@{/gestione/magazzino}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Magazzino
+            </a>
+            <h2 th:if="${ingrediente == null}">Nuovo <em>ingrediente</em></h2>
+            <h2 th:unless="${ingrediente == null}" th:text="${ingrediente.nome}">Polpo</h2>
+        </div>
+    </header>
+
+    <div class="form-layout">
+        <form method="post" class="card" th:object="${form}" novalidate
+              th:action="${ingrediente == null} ? @{/gestione/magazzino/ingredienti/nuovo} : @{/gestione/magazzino/ingredienti/{id}(id=${ingrediente.id})}">
+            <div class="card__body form">
+                <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+                    <span th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</span>
+                </div>
+                <div class="form-grid">
+                    <label class="field">
+                        <span>Nome</span>
+                        <input type="text" th:field="*{nome}" maxlength="80" th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></em>
+                    </label>
+                    <label class="field">
+                        <span>Fornitore <small>facoltativo</small></span>
+                        <input type="text" th:field="*{fornitore}" maxlength="80" placeholder="es. Pescheria Pozzuoli">
+                    </label>
+                    <div class="field full">
+                        <span class="field__label">Unità di misura</span>
+                        <div class="seg" data-unita-scelta>
+                            <label th:each="u : ${unita}">
+                                <input type="radio" th:field="*{unita}" th:value="${u}">
+                                <span th:text="${u.label}">kg</span>
+                            </label>
+                        </div>
+                    </div>
+                    <label class="field">
+                        <span>Scorta attuale</span>
+                        <div class="input-group">
+                            <input type="number" th:field="*{scorta}" step="0.001" min="0" class="input" th:classappend="${#fields.hasErrors('scorta')} ? 'is-invalid'" th:readonly="${ingrediente != null}">
+                            <span class="input-group__add" data-unita-label>kg</span>
+                        </div>
+                        <span class="field__hint" th:if="${ingrediente != null}">Per cambiare la giacenza registra un movimento dal magazzino.</span>
+                        <em class="field-error" th:if="${#fields.hasErrors('scorta')}" th:errors="*{scorta}"></em>
+                    </label>
+                    <label class="field">
+                        <span>Soglia minima</span>
+                        <div class="input-group">
+                            <input type="number" th:field="*{sogliaMinima}" step="0.001" min="0" class="input" th:classappend="${#fields.hasErrors('sogliaMinima')} ? 'is-invalid'">
+                            <span class="input-group__add" data-unita-label>kg</span>
+                        </div>
+                        <span class="field__hint">Sotto questa quantità l'ingrediente va riordinato.</span>
+                        <em class="field-error" th:if="${#fields.hasErrors('sogliaMinima')}" th:errors="*{sogliaMinima}"></em>
+                    </label>
+                    <label class="field">
+                        <span>Costo di acquisto</span>
+                        <div class="input-group">
+                            <input type="number" th:field="*{costoUnitario}" step="0.01" min="0" class="input" th:classappend="${#fields.hasErrors('costoUnitario')} ? 'is-invalid'">
+                            <span class="input-group__add">€ / <span data-unita-label>kg</span></span>
+                        </div>
+                        <em class="field-error" th:if="${#fields.hasErrors('costoUnitario')}" th:errors="*{costoUnitario}"></em>
+                    </label>
+                </div>
+            </div>
+            <footer class="card__foot">
+                <a class="btn btn--ghost" th:href="@{/gestione/magazzino}">Annulla</a>
+                <button type="submit" class="btn btn--primary">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Salva
+                </button>
+            </footer>
+        </form>
+
+        <aside class="form-aside" th:unless="${ingrediente == null}">
+            <section class="card">
+                <div class="card__body info-lista">
+                    <div><span>Valore in magazzino</span><strong th:text="${@fmt.euro(ingrediente.valore)}">€ 20</strong></div>
+                    <div><span>Stato</span><strong th:text="${ingrediente.esaurito} ? 'Esaurito' : (${ingrediente.sottoScorta} ? 'Sotto scorta' : 'In ordine')">In ordine</strong></div>
+                </div>
+                <div class="card__foot">
+                    <form method="post" th:action="@{/gestione/magazzino/ingredienti/{id}/elimina(id=${ingrediente.id})}"
+                          data-conferma="Eliminare l'ingrediente dal magazzino?">
+                        <button class="btn btn--sm btn--danger">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg>Elimina</button>
+                    </form>
+                </div>
+            </section>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

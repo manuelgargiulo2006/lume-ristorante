@@ -1,0 +1,23 @@
+/* Font ospitati in locale (licenza SIL OFL, vedi /fonts): niente richieste a server esterni */
+@font-face {
+    font-family: "Bodoni Moda";
+    src: url("../fonts/bodoni-moda.woff") format("woff");
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Bodoni Moda";
+    src: url("../fonts/bodoni-moda-italic.woff") format("woff");
+    font-weight: 400 900;
+    font-style: italic;
+    font-display: swap;
+}
+@font-face {
+    font-family: "Instrument Sans";
+    src: url("../fonts/instrument-sans.woff") format("woff");
+    font-weight: 400 700;
+    font-stretch: 75% 100%;
+    font-style: normal;
+    font-display: swap;
+}

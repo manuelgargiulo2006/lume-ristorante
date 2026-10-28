@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('Gestisci la prenotazione')}"></head>
+<body class="sito">
+
+<header th:replace="~{fragments/sito :: nav('gestisci')}"></header>
+
+<main class="pagina">
+    <div class="wrap cerca">
+        <p class="eyebrow">La mia prenotazione</p>
+        <h1 class="page-title">Ritrova il <em>tuo tavolo</em></h1>
+        <p class="page-lead">Inserisci il codice che hai ricevuto al momento della prenotazione, per esempio <strong>LM-7K2QX</strong>.</p>
+
+        <form class="cerca__form" method="get" th:action="@{/prenotazione}">
+            <label class="campo">
+                <span>Codice prenotazione</span>
+                <input type="text" name="codice" th:value="${codice}" placeholder="LM-XXXXX" required
+                       autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="12"
+                       th:classappend="${nonTrovata} ? 'is-invalid'">
+                <em class="field-error" th:if="${nonTrovata}">Nessuna prenotazione con questo codice. Controlla di averlo scritto bene.</em>
+            </label>
+            <button type="submit" class="btn btn--brass btn--lg">Cerca</button>
+        </form>
+
+        <p class="hint">Non trovi il codice? Chiamaci allo <a href="tel:+390810000148">081 000 0148</a>.</p>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/sito :: footer}"></footer>
+</body>
+</html>

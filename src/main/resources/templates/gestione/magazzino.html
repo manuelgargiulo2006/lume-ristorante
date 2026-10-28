@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Magazzino', ~{::main})}">
+<body>
+<main class="pagina" data-magazzino>
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow">Dispensa e cantina</p>
+            <h2>Il <em>magazzino</em></h2>
+            <p>Le giacenze scendono da sole quando un conto viene chiuso, in base alle ricette dei piatti.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" th:href="@{/gestione/magazzino/ordini-fornitori}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#camion'"/></svg>Ordini ai fornitori
+                <span class="side__badge side__badge--warn" th:if="${sottoScorta > 0}" th:text="${sottoScorta}">3</span>
+            </a>
+            <a class="btn btn--primary" th:href="@{/gestione/magazzino/ingredienti/nuovo}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Nuovo ingrediente
+            </a>
+        </div>
+    </header>
+
+    <section class="kpis">
+        <article class="card kpi kpi--accent">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#magazzino'"/></svg>Valore della merce</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(valore)}">€ 2.400</p>
+            <p class="kpi__foot">a prezzo di acquisto</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#foglia'"/></svg>Ingredienti</p>
+            <p class="kpi__value" th:text="${#lists.size(ingredienti)}">34</p>
+            <p class="kpi__foot">a magazzino</p>
+        </article>
+        <article class="card kpi" th:classappend="${sottoScorta > 0} ? 'kpi--avviso'">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>Sotto scorta</p>
+            <p class="kpi__value" th:text="${sottoScorta}">4</p>
+            <p class="kpi__foot" th:text="${sottoScorta > 0} ? 'da riordinare' : 'scorte in ordine'">da riordinare</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg>Sprechi</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(sprechi)}">€ 42</p>
+            <p class="kpi__foot">negli ultimi 30 giorni</p>
+        </article>
+    </section>
+
+    <div class="grid grid--magazzino">
+        <section class="card">
+            <div class="toolbar toolbar--card">
+                <label class="toolbar__cerca">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#cerca'"/></svg>
+                    <input type="search" placeholder="Cerca ingrediente o fornitore…" data-mag-cerca>
+                </label>
+                <div class="seg" role="group" aria-label="Filtro">
+                    <button type="button" class="is-active" data-mag-filtro="tutti">Tutti</button>
+                    <button type="button" data-mag-filtro="sotto">Sotto scorta</button>
+                </div>
+            </div>
+            <div class="table-wrap">
+                <table class="tabella mag-tab">
+                    <thead>
+                    <tr>
+                        <th>Ingrediente</th>
+                        <th>Giacenza</th>
+                        <th class="r">Costo</th>
+                        <th class="r">Valore</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="i : ${ingredienti}" th:attr="data-sotto=${i.sottoScorta}"
+                        th:classappend="${i.esaurito} ? 'is-esaurito' : (${i.sottoScorta} ? 'is-sotto' : '')">
+                        <td>
+                            <strong class="mag-tab__nome" th:text="${i.nome}">Polpo</strong>
+                            <small th:text="${i.fornitore} ?: 'Senza fornitore'">Pescheria</small>
+                        </td>
+                        <td class="mag-tab__livello">
+                            <div class="mag-tab__qta">
+                                <b class="num" th:text="${@fmt.quantita(i.scorta)} + ' ' + ${i.unita.label}">1,4 kg</b>
+                                <span class="pill" th:if="${i.sottoScorta}" th:classappend="${i.esaurito} ? 'pill--danger' : 'pill--warn'"
+                                      th:text="${i.esaurito} ? 'Esaurito' : 'Sotto scorta'">Sotto scorta</span>
+                            </div>
+                            <div class="barra" th:classappend="${i.esaurito} ? 'barra--danger' : (${i.sottoScorta} ? 'barra--warn' : '')">
+                                <span th:style="'width:' + ${i.livello} + '%'"></span>
+                            </div>
+                            <small th:text="'minimo ' + ${@fmt.quantita(i.sogliaMinima)} + ' ' + ${i.unita.label}">minimo 3 kg</small>
+                        </td>
+                        <td class="r num" th:text="${@fmt.euro(i.costoUnitario)} + '/' + ${i.unita.label}">€ 18/kg</td>
+                        <td class="r num strong" th:text="${@fmt.euro(i.valore)}">€ 25</td>
+                        <td class="r nowrap">
+                            <button type="button" class="btn btn--sm" data-modal-open="modale-movimento"
+                                    th:attr="data-azione=@{/gestione/magazzino/{id}/movimento(id=${i.id})},data-nome=${i.nome},data-unita=${i.unita.label},data-scorta=${i.scorta}">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#sposta'"/></svg>Movimento</button>
+                            <a class="btn btn--sm btn--ghost btn--icon" th:href="@{/gestione/magazzino/ingredienti/{id}(id=${i.id})}" title="Modifica" aria-label="Modifica">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg></a>
+                        </td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p class="empty" data-mag-vuoto hidden><small>Nessun ingrediente corrisponde alla ricerca</small></p>
+            </div>
+        </section>
+
+        <section class="card movimenti">
+            <header class="card__head"><h3>Ultimi movimenti</h3></header>
+            <div class="card__body--flush">
+                <ul class="list" th:unless="${#lists.isEmpty(movimenti)}">
+                    <li th:each="m : ${movimenti}">
+                        <span class="mov-icon" th:classappend="'mov-' + ${m.tipo.tone}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#' + (${m.tipo.tone == 'in'} ? 'camion' : (${m.tipo.tone == 'waste'} ? 'cestino' : (${m.tipo.tone == 'out'} ? 'conto' : 'modifica')))"/></svg>
+                        </span>
+                        <div class="list__main">
+                            <strong th:text="${m.ingrediente.nome}">Polpo</strong>
+                            <small th:text="${m.tipo.label} + (${m.nota != null} ? ' · ' + ${m.nota} : '') + ' · ' + ${@fmt.fa(m.data)}">Carico · 2 h fa</small>
+                        </div>
+                        <span class="mov-qta num" th:classappend="${m.quantita.signum() >= 0} ? 'is-piu' : 'is-meno'"
+                              th:text="(${m.quantita.signum() >= 0} ? '+' : '−') + ${@fmt.quantita(m.quantita.abs())} + ' ' + ${m.ingrediente.unita.label}">+5 kg</span>
+                    </li>
+                </ul>
+                <div class="empty" th:if="${#lists.isEmpty(movimenti)}"><strong>Nessun movimento registrato</strong></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- ===== registrazione di un movimento ===== -->
+    <dialog class="modal" id="modale-movimento" data-modale-movimento>
+        <form method="post" th:action="@{/gestione/magazzino}">
+            <header class="modal__head">
+                <div>
+                    <p class="eyebrow">Movimento di magazzino</p>
+                    <h3 data-mov-nome>Ingrediente</h3>
+                </div>
+                <button type="button" class="icon-btn" data-modal-close aria-label="Chiudi"><svg class="i"><use th:href="@{/img/icons.svg} + '#x'"/></svg></button>
+            </header>
+            <div class="modal__body">
+                <div class="seg seg--larga">
+                    <label th:each="t, st : ${tipi}">
+                        <input type="radio" name="tipo" th:value="${t}" th:checked="${st.first}">
+                        <span th:text="${t.name() == 'CARICO'} ? 'Arrivo merce' : (${t.name() == 'SPRECO'} ? 'Spreco' : 'Inventario')">Carico</span>
+                    </label>
+                </div>
+                <label class="field">
+                    <span data-mov-etichetta>Quantità arrivata</span>
+                    <div class="input-group">
+                        <input type="number" name="quantita" class="input" step="0.001" min="0.001" required data-mov-qta>
+                        <span class="input-group__add" data-mov-unita>kg</span>
+                    </div>
+                </label>
+                <p class="mov-anteprima">Adesso: <b data-mov-ora>—</b> → dopo: <b data-mov-dopo>—</b></p>
+                <label class="field">
+                    <span>Nota <small>facoltativa</small></span>
+                    <input type="text" name="nota" maxlength="200" placeholder="es. bolla n. 42, scaduto, conteggio di fine mese">
+                </label>
+            </div>
+            <footer class="modal__foot">
+                <button type="button" class="btn btn--ghost" data-modal-close>Annulla</button>
+                <button type="submit" class="btn btn--primary">Registra</button>
+            </footer>
+        </form>
+    </dialog>
+</main>
+</body>
+</html>

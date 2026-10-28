@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('La tua prenotazione')}"></head>
+<body class="sito">
+
+<header th:replace="~{fragments/sito :: nav('gestisci')}"></header>
+
+<main class="pagina">
+    <div class="wrap ticket-wrap">
+
+        <div class="alert alert--ok" th:if="${ok}" th:text="${ok}" role="status">ok</div>
+        <div class="alert alert--errore" th:if="${errore}" th:text="${errore}" role="alert">errore</div>
+
+        <header class="ticket-head" th:if="${nuova}">
+            <span class="ticket-head__check">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#check'"/></svg>
+            </span>
+            <h1 class="page-title" th:if="${p.stato.name() == 'CONFERMATA'}">Ci <em>vediamo</em> presto</h1>
+            <h1 class="page-title" th:unless="${p.stato.name() == 'CONFERMATA'}">Richiesta <em>ricevuta</em></h1>
+            <p class="page-lead" th:if="${p.stato.name() == 'CONFERMATA'}">Il tavolo è confermato. Salva il codice qui sotto per gestire la prenotazione.</p>
+            <p class="page-lead" th:unless="${p.stato.name() == 'CONFERMATA'}">Per i gruppi confermiamo noi con una telefonata entro poche ore.</p>
+        </header>
+        <header class="ticket-head" th:unless="${nuova}">
+            <p class="eyebrow">La tua prenotazione</p>
+            <h1 class="page-title" th:text="${p.nome}">Nome</h1>
+        </header>
+
+        <article class="ticket" th:classappend="'ticket--' + ${p.stato.tone}">
+            <div class="ticket__top">
+                <div>
+                    <p class="ticket__label">Codice</p>
+                    <p class="ticket__codice" th:text="${p.codice}">LM-XXXXX</p>
+                </div>
+                <span class="stato" th:classappend="'stato--' + ${p.stato.tone}" th:text="${p.stato.label}">Confermata</span>
+            </div>
+            <div class="ticket__grid">
+                <div>
+                    <p class="ticket__label">Giorno</p>
+                    <p class="ticket__val" th:text="${#temporals.format(p.data, 'EEEE d MMMM yyyy')}">giorno</p>
+                </div>
+                <div>
+                    <p class="ticket__label">Orario</p>
+                    <p class="ticket__val" th:text="${#temporals.format(p.ora, 'HH:mm')}">20:00</p>
+                </div>
+                <div>
+                    <p class="ticket__label">Persone</p>
+                    <p class="ticket__val" th:text="${p.persone}">2</p>
+                </div>
+                <div>
+                    <p class="ticket__label">A nome di</p>
+                    <p class="ticket__val" th:text="${p.nome}">Nome</p>
+                </div>
+            </div>
+            <p class="ticket__note" th:if="${p.note}">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#nota'"/></svg>
+                <span th:text="${p.note}">note</span>
+            </p>
+            <div class="ticket__perf" aria-hidden="true"></div>
+            <div class="ticket__bottom">
+                <p>Lume · Via Chiaia 148, Napoli</p>
+                <div class="ticket__azioni" th:if="${p.attiva}">
+                    <a class="btn btn--ghost" th:href="@{/prenotazione/{c}/calendario.ics(c=${p.codice})}">
+                        <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>
+                        Aggiungi al calendario
+                    </a>
+                    <button type="button" class="btn btn--ghost" data-copia-btn th:attr="data-testo=${p.codice}">Copia codice</button>
+                </div>
+            </div>
+        </article>
+
+        <details class="annulla" th:if="${p.attiva}">
+            <summary>Devi annullare?</summary>
+            <form method="post" th:action="@{/prenotazione/{c}/annulla(c=${p.codice})}" class="annulla__form">
+                <p>Per sicurezza inserisci il numero di telefono usato per prenotare.</p>
+                <div class="annulla__row">
+                    <label class="campo">
+                        <span>Telefono</span>
+                        <input type="tel" name="telefono" required autocomplete="tel">
+                    </label>
+                    <button type="submit" class="btn btn--danger">Annulla la prenotazione</button>
+                </div>
+            </form>
+        </details>
+
+        <p class="ticket-foot"><a th:href="@{/}">← Torna al sito</a></p>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/sito :: footer}"></footer>
+</body>
+</html>

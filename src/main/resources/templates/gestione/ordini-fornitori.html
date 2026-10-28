@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Ordini ai fornitori', ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <a class="back no-print" th:href="@{/gestione/magazzino}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Magazzino
+            </a>
+            <h2>Ordini ai <em>fornitori</em></h2>
+            <p>Cosa riordinare per riportare ogni ingrediente sotto scorta a tre volte la soglia minima.</p>
+        </div>
+        <div class="page-head__actions no-print" th:unless="${#maps.isEmpty(perFornitore)}">
+            <button type="button" class="btn" onclick="window.print()">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#stampa'"/></svg>Stampa
+            </button>
+        </div>
+    </header>
+
+    <div class="card" th:if="${#maps.isEmpty(perFornitore)}">
+        <div class="empty">
+            <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg></span>
+            <strong>Niente da ordinare</strong>
+            <small>Tutti gli ingredienti sono sopra la soglia minima.</small>
+        </div>
+    </div>
+
+    <th:block th:unless="${#maps.isEmpty(perFornitore)}">
+        <div class="ordini-totale card">
+            <div>
+                <p class="eyebrow">Spesa stimata</p>
+                <p class="ordini-totale__val num" th:text="${@fmt.euro(totale)}">€ 320,00</p>
+            </div>
+            <p class="muted" th:text="${#maps.size(perFornitore)} + (${#maps.size(perFornitore) == 1} ? ' fornitore da contattare' : ' fornitori da contattare')">3 fornitori</p>
+        </div>
+
+        <section class="card fornitore" th:each="f : ${perFornitore}">
+            <header class="card__head">
+                <h3><svg class="i"><use th:href="@{/img/icons.svg} + '#camion'"/></svg><span th:text="${f.key}">Pescheria</span></h3>
+                <button type="button" class="btn btn--sm no-print" data-copia-ordine
+                        th:attr="data-testo=${'Buongiorno, per Lume vorremmo ordinare:'}">Copia messaggio</button>
+            </header>
+            <div class="table-wrap">
+                <table class="tabella">
+                    <thead><tr><th>Ingrediente</th><th class="r">In magazzino</th><th class="r">Da ordinare</th><th class="r">Costo stimato</th></tr></thead>
+                    <tbody>
+                    <tr th:each="r : ${f.value}" th:with="i=${r['ingrediente']}"
+                        th:attr="data-riga-ordine=${i.nome} + ': ' + ${@fmt.quantita(r['quantita'])} + ' ' + ${i.unita.label}">
+                        <td class="strong" th:text="${i.nome}">Polpo</td>
+                        <td class="r num" th:classappend="${i.esaurito} ? 'testo-danger'" th:text="${@fmt.quantita(i.scorta)} + ' ' + ${i.unita.label}">1,4 kg</td>
+                        <td class="r num strong" th:text="${@fmt.quantita(r['quantita'])} + ' ' + ${i.unita.label}">7,6 kg</td>
+                        <td class="r num" th:text="${@fmt.euro(r['costo'])}">€ 130</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </th:block>
+</main>
+</body>
+</html>

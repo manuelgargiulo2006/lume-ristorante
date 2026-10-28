@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('Prenota un tavolo')}"></head>
+<body class="sito">
+
+<header th:replace="~{fragments/sito :: nav('prenota')}"></header>
+
+<main class="pagina">
+    <div class="wrap prenota">
+        <section class="prenota__intro">
+            <p class="eyebrow">Prenotazione online</p>
+            <h1 class="page-title">Un tavolo<br><em>per voi</em></h1>
+            <p class="page-lead">Scegli quante persone, il giorno e l'orario: vedi in tempo reale i posti liberi.
+                Riceverai un codice per modificare o annullare quando vuoi.</p>
+
+            <div class="riepilogo-card" aria-live="polite">
+                <p class="riepilogo-card__label">Il tuo tavolo</p>
+                <p class="riepilogo-card__main">
+                    <span data-r-persone th:text="${form.persone} + (${form.persone == 1} ? ' persona' : ' persone')">2 persone</span>
+                </p>
+                <p class="riepilogo-card__sub">
+                    <span data-r-data th:text="${form.data != null} ? ${#temporals.format(form.data, 'EEEE d MMMM')} : 'Scegli il giorno'">giorno</span>
+                    <span class="sep">·</span>
+                    <span data-r-ora th:text="${form.ora != null} ? ${#temporals.format(form.ora, 'HH:mm')} : 'orario'">orario</span>
+                </p>
+                <p class="riepilogo-card__note" data-r-gruppo th:hidden="${form.persone == null or form.persone < 7}">
+                    Per i gruppi da 7 persone in su la prenotazione viene confermata dal ristorante con una telefonata.
+                </p>
+            </div>
+        </section>
+
+        <form class="prenota__form" method="post" th:action="@{/prenota}" th:object="${form}" novalidate data-prenota
+              th:attr="data-api=@{/api/public/disponibilita}">
+
+            <div class="alert alert--errore" th:if="${#fields.hasGlobalErrors()}" role="alert">
+                <p th:each="e : ${#fields.globalErrors()}" th:text="${e}">Errore</p>
+            </div>
+
+            <!-- 1. Persone -->
+            <fieldset class="step">
+                <legend><span class="step__n">1</span> Quante persone?</legend>
+                <div class="persone" role="radiogroup">
+                    <label class="persone__opt" th:each="n : ${#numbers.sequence(1, 12)}">
+                        <input type="radio" th:field="*{persone}" th:value="${n}">
+                        <span th:text="${n}">2</span>
+                    </label>
+                </div>
+                <p class="field-error" th:if="${#fields.hasErrors('persone')}" th:errors="*{persone}"></p>
+                <p class="hint">Per più di 12 persone chiamaci allo <a href="tel:+390810000148">081 000 0148</a>.</p>
+            </fieldset>
+
+            <!-- 2. Giorno -->
+            <fieldset class="step">
+                <legend><span class="step__n">2</span> Quale giorno?</legend>
+                <div class="giorni" data-giorni>
+                    <label class="giorno" th:each="g : ${giorni}"
+                           th:classappend="${#temporals.dayOfWeek(g) == 1} ? 'is-chiuso'">
+                        <input type="radio" th:field="*{data}" th:value="${g}"
+                               th:disabled="${#temporals.dayOfWeek(g) == 1}">
+                        <span class="giorno__dow" th:text="${#temporals.format(g, 'EEE')}">mar</span>
+                        <span class="giorno__num" th:text="${#temporals.day(g)}">24</span>
+                        <span class="giorno__mese" th:text="${#temporals.dayOfWeek(g) == 1} ? 'chiuso' : ${#temporals.format(g, 'MMM')}">ott</span>
+                    </label>
+                </div>
+                <p class="field-error" th:if="${#fields.hasErrors('data')}" th:errors="*{data}"></p>
+            </fieldset>
+
+            <!-- 3. Orario -->
+            <fieldset class="step" data-orari>
+                <legend><span class="step__n">3</span> A che ora?</legend>
+                <div class="orari" data-orari-body>
+                    <p class="orari__vuoto" th:if="${chiuso}">Il lunedì siamo chiusi per riposo. Scegli un altro giorno.</p>
+                    <p class="orari__vuoto" th:if="${!chiuso and nessunaFascia}">Per questo giorno non ci sono più tavoli
+                        per <span th:text="${form.persone}">2</span> persone. Prova un'altra data.</p>
+                    <div class="servizio" th:unless="${chiuso or nessunaFascia}">
+                        <th:block th:each="gruppo : ${ {pranzo, cena} }">
+                            <div class="servizio__gruppo" th:unless="${#lists.isEmpty(gruppo)}">
+                                <h4 th:text="${gruppo[0].servizio}">Pranzo</h4>
+                                <div class="slots">
+                                    <label class="slot" th:each="f : ${gruppo}" th:classappend="${!f.disponibile} ? 'is-pieno'">
+                                        <input type="radio" name="ora" th:value="${f.etichetta}"
+                                               th:checked="${form.ora != null and #temporals.format(form.ora, 'HH:mm') == f.etichetta}"
+                                               th:disabled="${!f.disponibile}">
+                                        <span class="slot__ora" th:text="${f.etichetta}">20:00</span>
+                                        <span class="slot__posti" th:text="${f.disponibile} ? (${f.postiLiberi <= 8} ? 'ultimi posti' : 'disponibile') : (${f.postiLiberi >= form.persone} ? 'non prenotabile' : 'completo')">disponibile</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </th:block>
+                    </div>
+                </div>
+                <p class="field-error" th:if="${#fields.hasErrors('ora')}" th:errors="*{ora}"></p>
+            </fieldset>
+
+            <!-- 4. Dati -->
+            <fieldset class="step">
+                <legend><span class="step__n">4</span> I tuoi dati</legend>
+                <div class="campi">
+                    <label class="campo campo--full">
+                        <span>Nome e cognome</span>
+                        <input type="text" th:field="*{nome}" autocomplete="name" required maxlength="80"
+                               th:classappend="${#fields.hasErrors('nome')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('nome')}" th:errors="*{nome}"></em>
+                    </label>
+                    <label class="campo">
+                        <span>Telefono</span>
+                        <input type="tel" th:field="*{telefono}" autocomplete="tel" required
+                               th:classappend="${#fields.hasErrors('telefono')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('telefono')}" th:errors="*{telefono}"></em>
+                    </label>
+                    <label class="campo">
+                        <span>Email <small>facoltativa</small></span>
+                        <input type="email" th:field="*{email}" autocomplete="email"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid'">
+                        <em class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></em>
+                    </label>
+                    <label class="campo campo--full">
+                        <span>Note <small>allergie, ricorrenze, seggiolone…</small></span>
+                        <textarea th:field="*{note}" rows="3" maxlength="400"></textarea>
+                    </label>
+                </div>
+            </fieldset>
+
+            <div class="prenota__invio">
+                <button type="submit" class="btn btn--brass btn--lg btn--block">Conferma la prenotazione</button>
+                <p class="hint">Confermando accetti di essere contattato solo per questa prenotazione.</p>
+            </div>
+        </form>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/sito :: footer}"></footer>
+</body>
+</html>

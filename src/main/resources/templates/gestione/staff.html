@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Staff', ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow">Impostazioni</p>
+            <h2>Lo <em>staff</em></h2>
+            <p>Chi può entrare nel gestionale e cosa può fare.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn btn--primary" th:href="@{/gestione/staff/nuovo}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Nuovo account
+            </a>
+        </div>
+    </header>
+
+    <div class="ruoli">
+        <div class="ruolo"><span class="pill pill--wine pill--plain">Amministratore</span><p>Tutto: menù, magazzino, statistiche, tavoli e staff.</p></div>
+        <div class="ruolo"><span class="pill pill--brass pill--plain">Sala</span><p>Sala, comande, conti e prenotazioni.</p></div>
+        <div class="ruolo"><span class="pill pill--sage pill--plain">Cucina</span><p>Monitor della cucina e magazzino.</p></div>
+    </div>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="tabella">
+                <thead><tr><th>Persona</th><th>Utente</th><th>Ruolo</th><th>Stato</th><th class="r">Dal</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="s : ${staff}" th:classappend="${!s.attivo} ? 'is-off'">
+                    <td>
+                        <div class="persona">
+                            <span class="avatar" th:classappend="'avatar--' + ${s.ruolo.tone}" th:text="${s.iniziali}">MR</span>
+                            <strong th:text="${s.nomeCompleto}">Marco Russo</strong>
+                            <span class="pill pill--plain" th:if="${s.id == utente.id}">tu</span>
+                        </div>
+                    </td>
+                    <td class="mono" th:text="${s.username}">sala</td>
+                    <td><span class="pill pill--plain" th:classappend="'pill--' + ${s.ruolo.tone}" th:text="${s.ruolo.label}">Sala</span></td>
+                    <td><span class="pill" th:classappend="${s.attivo} ? 'pill--ok' : 'pill--draft'" th:text="${s.attivo} ? 'Attivo' : 'Disattivato'">Attivo</span></td>
+                    <td class="r faint" th:text="${s.creatoIl != null} ? ${#temporals.format(s.creatoIl, 'd MMM yyyy')} : '—'">1 ott</td>
+                    <td class="r">
+                        <a class="btn btn--sm" th:href="@{/gestione/staff/{id}(id=${s.id})}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg>Modifica</a>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<!-- <head> del gestionale, usato dal layout e dalle pagine a tutto schermo (cucina, preconto) -->
+<head th:fragment="head(titolo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titolo} + ' · Lume gestionale'">Lume gestionale</title>
+    <meta name="robots" content="noindex">
+    <meta name="_csrf" th:content="${_csrf?.token}">
+    <meta name="_csrf_header" th:content="${_csrf?.headerName}">
+    <meta name="theme-color" content="#2B0F17">
+    <link rel="icon" th:href="@{/img/favicon.svg}" type="image/svg+xml">
+    <script>
+        /* applica subito il tema scelto, per evitare il lampo bianco */
+        try {
+            const t = localStorage.getItem('lume-tema');
+            if (t) document.documentElement.dataset.theme = t;
+        } catch (e) { /* storage non disponibile */ }
+    </script>
+    <link rel="stylesheet" th:href="@{/css/fonts.css}">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
+    <script th:src="@{/js/app.js}" defer></script>
+</head>
+</html>

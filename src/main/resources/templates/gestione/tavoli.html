@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Tavoli', ~{::main})}">
+<body>
+<main class="pagina pagina--stretta">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow">Impostazioni</p>
+            <h2>I <em>tavoli</em></h2>
+            <p><span th:text="${#lists.size(tavoli)}">14</span> tavoli, <span th:text="${postiTotali}">50</span> posti a sedere.
+                La posizione sulla mappa si cambia trascinando i tavoli dalla pagina Sala.</p>
+        </div>
+        <div class="page-head__actions">
+            <a class="btn" th:href="@{/gestione/sala}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#sposta'"/></svg>Disponi sulla mappa</a>
+            <a class="btn btn--primary" th:href="@{/gestione/tavoli/nuovo}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Nuovo tavolo</a>
+        </div>
+    </header>
+
+    <section class="card">
+        <div class="table-wrap">
+            <table class="tabella">
+                <thead><tr><th>Tavolo</th><th>Zona</th><th>Forma</th><th class="c">Posti</th><th>Stato</th><th></th></tr></thead>
+                <tbody>
+                <tr th:each="t : ${tavoli}" th:classappend="${!t.attivo} ? 'is-off'">
+                    <td><span class="tavolo-badge" th:text="${t.numero}">3</span></td>
+                    <td th:text="${t.zona.label}">Sala</td>
+                    <td th:text="${t.forma.label}">Quadrato</td>
+                    <td class="c strong" th:text="${t.posti}">4</td>
+                    <td><span class="pill" th:classappend="${t.attivo} ? 'pill--ok' : 'pill--draft'" th:text="${t.attivo} ? 'In uso' : 'Non in uso'">In uso</span></td>
+                    <td class="r nowrap">
+                        <a class="btn btn--sm" th:href="@{/gestione/tavoli/{id}(id=${t.id})}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg>Modifica</a>
+                        <form method="post" class="inline" th:action="@{/gestione/tavoli/{id}/elimina(id=${t.id})}"
+                              th:attr="data-conferma='Eliminare il tavolo ' + ${t.numero} + '?'">
+                            <button class="btn btn--sm btn--ghost btn--icon" title="Elimina" aria-label="Elimina">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#cestino'"/></svg></button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+</main>
+</body>
+</html>

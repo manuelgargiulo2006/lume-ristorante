@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<!--
+    Struttura comune del gestionale.
+    Uso in una pagina:  <html th:replace="~{fragments/app :: layout('Titolo', ~{::main})}"> ... <main>...</main>
+-->
+<html lang="it" th:fragment="layout(titolo, contenuto)"
+      xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head th:replace="~{fragments/testa :: head(${titolo})}"></head>
+<body class="app-body">
+
+<div class="app" data-app>
+
+    <!-- ===== barra laterale ===== -->
+    <aside class="side" id="side" data-side>
+        <a class="side__brand" th:href="@{/gestione}">
+            <svg class="side__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+            <span>Lume</span>
+            <small>gestionale</small>
+        </a>
+
+        <nav class="side__nav" aria-label="Sezioni del gestionale">
+            <p class="side__group">Servizio</p>
+            <a th:href="@{/gestione}" th:classappend="${attivo == 'dashboard'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#dashboard'"/></svg>Panoramica
+            </a>
+            <a sec:authorize="hasAnyRole('ADMIN','SALA')" th:href="@{/gestione/sala}" th:classappend="${attivo == 'sala'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#sala'"/></svg>Sala
+                <span class="side__badge side__badge--ok" th:if="${notificaPronti > 0}" th:text="${notificaPronti}"
+                      title="Piatti pronti da servire">2</span>
+            </a>
+            <a th:href="@{/gestione/cucina}" th:classappend="${attivo == 'cucina'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#cucina'"/></svg>Cucina
+            </a>
+            <a sec:authorize="hasAnyRole('ADMIN','SALA')" th:href="@{/gestione/prenotazioni}" th:classappend="${attivo == 'prenotazioni'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>Prenotazioni
+                <span class="side__badge" th:if="${notificaPrenotazioni > 0}" th:text="${notificaPrenotazioni}"
+                      title="Da confermare">1</span>
+            </a>
+
+            <p class="side__group" sec:authorize="hasAnyRole('ADMIN','CUCINA')">Gestione</p>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/gestione/menu}" th:classappend="${attivo == 'menu'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#menu'"/></svg>Menù
+            </a>
+            <a sec:authorize="hasAnyRole('ADMIN','CUCINA')" th:href="@{/gestione/magazzino}" th:classappend="${attivo == 'magazzino'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#magazzino'"/></svg>Magazzino
+                <span class="side__badge side__badge--warn" th:if="${notificaScorte > 0}" th:text="${notificaScorte}"
+                      title="Ingredienti sotto scorta">4</span>
+            </a>
+            <a sec:authorize="hasRole('ADMIN')" th:href="@{/gestione/statistiche}" th:classappend="${attivo == 'statistiche'} ? 'is-active'">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#grafico'"/></svg>Statistiche
+            </a>
+
+            <th:block sec:authorize="hasRole('ADMIN')">
+                <p class="side__group">Impostazioni</p>
+                <a th:href="@{/gestione/tavoli}" th:classappend="${attivo == 'tavoli'} ? 'is-active'">
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#tavolo'"/></svg>Tavoli
+                </a>
+                <a th:href="@{/gestione/staff}" th:classappend="${attivo == 'staff'} ? 'is-active'">
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#staff'"/></svg>Staff
+                </a>
+            </th:block>
+        </nav>
+
+        <div class="side__foot">
+            <a class="side__site" th:href="@{/}" target="_blank" rel="noopener">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#porta'"/></svg>Vedi il sito pubblico
+            </a>
+            <div class="side__user">
+                <span class="avatar" th:text="${utente.iniziali}">GF</span>
+                <div class="side__who">
+                    <strong th:text="${utente.nomeCompleto}">Giulia Ferrara</strong>
+                    <span th:text="${utente.ruolo.label}">Amministratore</span>
+                </div>
+                <form method="post" th:action="@{/logout}">
+                    <button type="submit" class="icon-btn icon-btn--side" title="Esci" aria-label="Esci">
+                        <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#esci'"/></svg>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </aside>
+    <div class="side-scrim" data-side-close></div>
+
+    <!-- ===== colonna principale ===== -->
+    <div class="main">
+        <header class="top">
+            <button type="button" class="icon-btn top__menu" data-side-open aria-label="Apri il menù" aria-controls="side">
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#menu-lines'"/></svg>
+            </button>
+            <h1 class="top__title" th:text="${titolo}">Titolo</h1>
+
+            <button type="button" class="top__search" data-palette-open>
+                <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#cerca'"/></svg>
+                <span>Cerca o vai a…</span>
+                <kbd>Ctrl K</kbd>
+            </button>
+
+            <div class="top__tools">
+                <span class="top__clock" data-orologio aria-hidden="true">20:30</span>
+
+                <div class="pop" data-pop>
+                    <button type="button" class="icon-btn" data-pop-toggle aria-label="Notifiche" aria-haspopup="true" aria-expanded="false">
+                        <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#campana'"/></svg>
+                        <span class="dot" th:if="${notificheTotali > 0}" th:text="${notificheTotali}">3</span>
+                    </button>
+                    <div class="pop__panel" role="menu">
+                        <p class="pop__title">Da fare adesso</p>
+                        <a class="notif" th:if="${notificaPronti > 0}" th:href="@{/gestione/sala}">
+                            <span class="notif__icon notif__icon--ok"><svg class="i"><use th:href="@{/img/icons.svg} + '#campana'"/></svg></span>
+                            <span><strong th:text="${notificaPronti} + (${notificaPronti == 1} ? ' piatto pronto' : ' piatti pronti')">2 piatti pronti</strong>
+                                <small>Da portare in sala</small></span>
+                        </a>
+                        <a class="notif" th:if="${notificaPrenotazioni > 0}" th:href="@{/gestione/prenotazioni}">
+                            <span class="notif__icon notif__icon--info"><svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg></span>
+                            <span><strong th:text="${notificaPrenotazioni} + (${notificaPrenotazioni == 1} ? ' richiesta' : ' richieste') + ' da confermare'">1 richiesta</strong>
+                                <small>Gruppi prenotati dal sito</small></span>
+                        </a>
+                        <a class="notif" th:if="${notificaScorte > 0}" th:href="@{/gestione/magazzino(filtro='sotto')}">
+                            <span class="notif__icon notif__icon--warn"><svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg></span>
+                            <span><strong th:text="${notificaScorte} + (${notificaScorte == 1} ? ' ingrediente' : ' ingredienti') + ' sotto scorta'">4 ingredienti</strong>
+                                <small>Prepara gli ordini ai fornitori</small></span>
+                        </a>
+                        <p class="pop__empty" th:if="${notificheTotali == 0}">Tutto sotto controllo ✓</p>
+                    </div>
+                </div>
+
+                <button type="button" class="icon-btn" data-tema aria-label="Cambia tema chiaro/scuro" title="Tema chiaro / scuro">
+                    <svg class="i i--luna" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#luna'"/></svg>
+                    <svg class="i i--sole" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#sole'"/></svg>
+                </button>
+            </div>
+        </header>
+
+        <div class="flash" hidden>
+            <span data-flash="ok" th:if="${ok}" th:text="${ok}"></span>
+            <span data-flash="errore" th:if="${errore}" th:text="${errore}"></span>
+        </div>
+
+        <main th:replace="${contenuto}">contenuto</main>
+    </div>
+</div>
+
+<!-- ===== palette comandi (Ctrl+K) ===== -->
+<dialog class="palette" data-palette aria-label="Cerca nel gestionale">
+    <div class="palette__box">
+        <label class="palette__search">
+            <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#cerca'"/></svg>
+            <input type="text" placeholder="Cerca una sezione o un'azione…" data-palette-input autocomplete="off" spellcheck="false">
+            <kbd>Esc</kbd>
+        </label>
+        <ul class="palette__list" data-palette-list role="listbox">
+            <li><a th:href="@{/gestione}" data-k="panoramica dashboard home">Panoramica<small>Vai</small></a></li>
+            <th:block sec:authorize="hasAnyRole('ADMIN','SALA')">
+                <li><a th:href="@{/gestione/sala}" data-k="sala tavoli mappa comande">Sala e comande<small>Vai</small></a></li>
+                <li><a th:href="@{/gestione/prenotazioni}" data-k="prenotazioni oggi agenda">Prenotazioni di oggi<small>Vai</small></a></li>
+                <li><a th:href="@{/gestione/prenotazioni/nuova}" data-k="nuova prenotazione telefono">Nuova prenotazione<small>Azione</small></a></li>
+            </th:block>
+            <li><a th:href="@{/gestione/cucina}" data-k="cucina monitor ordini kds">Monitor cucina<small>Vai</small></a></li>
+            <th:block sec:authorize="hasAnyRole('ADMIN','CUCINA')">
+                <li><a th:href="@{/gestione/magazzino}" data-k="magazzino scorte ingredienti">Magazzino<small>Vai</small></a></li>
+                <li><a th:href="@{/gestione/magazzino/ordini-fornitori}" data-k="ordini fornitori spesa riordino">Ordini ai fornitori<small>Vai</small></a></li>
+            </th:block>
+            <th:block sec:authorize="hasRole('ADMIN')">
+                <li><a th:href="@{/gestione/menu}" data-k="menu piatti carta categorie">Menù<small>Vai</small></a></li>
+                <li><a th:href="@{/gestione/menu/piatti/nuovo}" data-k="nuovo piatto aggiungi menu">Nuovo piatto<small>Azione</small></a></li>
+                <li><a th:href="@{/gestione/magazzino/ingredienti/nuovo}" data-k="nuovo ingrediente magazzino">Nuovo ingrediente<small>Azione</small></a></li>
+                <li><a th:href="@{/gestione/statistiche}" data-k="statistiche incassi report vendite">Statistiche<small>Vai</small></a></li>
+                <li><a th:href="@{/gestione/tavoli}" data-k="tavoli disposizione sala impostazioni">Tavoli<small>Impostazioni</small></a></li>
+                <li><a th:href="@{/gestione/staff}" data-k="staff personale utenti camerieri">Staff<small>Impostazioni</small></a></li>
+            </th:block>
+            <li><a th:href="@{/}" data-k="sito pubblico clienti" target="_blank">Sito pubblico<small>Apri</small></a></li>
+        </ul>
+        <p class="palette__empty" data-palette-empty hidden>Nessun risultato</p>
+    </div>
+</dialog>
+
+<div class="toasts" data-toasts aria-live="polite"></div>
+</body>
+</html>
+

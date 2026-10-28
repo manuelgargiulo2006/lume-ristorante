@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/sito :: head('Menù')}"></head>
+<body class="sito">
+
+<header th:replace="~{fragments/sito :: nav('menu')}"></header>
+
+<main class="pagina">
+    <section class="page-hero wrap">
+        <p class="eyebrow">Autunno · la carta</p>
+        <h1 class="page-title">Il <em>menù</em></h1>
+        <p class="page-lead">Coperto <span>€ 3,50</span>. Pane, grissini e olio extravergine dei Colli Salernitani
+            sono fatti da noi. Chiedi pure al personale qualsiasi variazione per intolleranze.</p>
+    </section>
+
+    <div class="menu-bar" data-menu-bar>
+        <div class="wrap menu-bar__inner">
+            <nav class="menu-bar__cats" aria-label="Categorie">
+                <a th:each="voce : ${menu}" th:href="'#cat-' + ${voce.key.id}" th:text="${voce.key.nome}">Primi</a>
+            </nav>
+            <div class="menu-bar__filters" role="group" aria-label="Filtri">
+                <button type="button" class="chip" data-filtro="veg" aria-pressed="false">
+                    <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#foglia'"/></svg>Vegetariano
+                </button>
+                <button type="button" class="chip" data-filtro="GLUTINE" aria-pressed="false">Senza glutine</button>
+                <button type="button" class="chip" data-filtro="LATTE" aria-pressed="false">Senza lattosio</button>
+                <button type="button" class="chip" data-filtro="mare" aria-pressed="false">Senza pesce</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="wrap menu-wrap">
+        <section class="menu-sez" th:each="voce : ${menu}" th:id="'cat-' + ${voce.key.id}">
+            <header class="menu-sez__head">
+                <h2 th:text="${voce.key.nome}">Primi</h2>
+                <p th:text="${voce.key.sottotitolo}">Sottotitolo</p>
+            </header>
+            <ul class="menu-list">
+                <li class="voce reveal" th:each="p : ${voce.value}"
+                    th:attr="data-allergeni=${#strings.listJoin(p.allergeni, ' ')},data-veg=${p.vegetariano}">
+                    <div class="voce__row">
+                        <h3 class="voce__nome">
+                            <span th:text="${p.nome}">Nome</span>
+                            <span class="tag tag--veg" th:if="${p.vegano}" title="Vegano">VG</span>
+                            <span class="tag tag--veg" th:if="${p.vegetariano and !p.vegano}" title="Vegetariano">V</span>
+                            <span class="tag tag--firma" th:if="${p.inEvidenza}" title="Piatto firma">Firma</span>
+                        </h3>
+                        <span class="voce__leader" aria-hidden="true"></span>
+                        <span class="voce__prezzo" th:text="${#numbers.formatDecimal(p.prezzo, 1, 'POINT', 0, 'COMMA')}">18</span>
+                    </div>
+                    <p class="voce__desc" th:text="${p.descrizione}">Descrizione</p>
+                    <div class="voce__meta">
+                        <span class="voce__wine" th:if="${p.abbinamento}">
+                            <svg class="i" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#calice'"/></svg>
+                            <span th:text="${p.abbinamento}">Vino</span>
+                        </span>
+                        <span class="voce__allergeni" th:unless="${#sets.isEmpty(p.allergeni)}">
+                            <abbr th:each="a : ${p.allergeni}" th:title="${a.label}" th:text="${a.tone}">G</abbr>
+                        </span>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+        <p class="menu-vuoto" data-menu-vuoto hidden>Nessun piatto corrisponde ai filtri scelti.
+            <button type="button" class="link" data-filtri-reset>Togli i filtri</button></p>
+
+        <aside class="legenda">
+            <h3>Allergeni</h3>
+            <p>Reg. UE 1169/2011. Le sigle accanto a ogni piatto indicano gli allergeni presenti.</p>
+            <ul>
+                <li th:each="a : ${allergeni}"><abbr th:text="${a.tone}">G</abbr><span th:text="${a.label}">Glutine</span></li>
+            </ul>
+        </aside>
+
+        <div class="menu-cta">
+            <h2 class="section-title">Ti aspettiamo <em>a tavola</em></h2>
+            <a class="btn btn--brass btn--lg" th:href="@{/prenota}">Prenota un tavolo</a>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments/sito :: footer}"></footer>
+</body>
+</html>

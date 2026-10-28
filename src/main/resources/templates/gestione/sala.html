@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"
+      th:replace="~{fragments/app :: layout('Sala', ~{::main})}">
+<body>
+<main class="pagina" data-sala th:attr="data-api=@{/api/gestione/sala},data-sposta=@{/api/gestione/tavoli/}">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow">Servizio in corso</p>
+            <h2>La <em>sala</em></h2>
+            <p>Tocca un tavolo per aprire la comanda o vedere i dettagli. La mappa si aggiorna da sola.</p>
+        </div>
+        <div class="page-head__actions">
+            <button type="button" class="btn" sec:authorize="hasRole('ADMIN')" data-sala-modifica>
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#sposta'"/></svg><span>Sposta i tavoli</span>
+            </button>
+            <a class="btn" th:href="@{/gestione/prenotazioni}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>Prenotazioni
+            </a>
+        </div>
+    </header>
+
+    <div data-swap="sala" class="sala-wrap">
+        <div class="sala-legenda">
+            <span class="sala-legenda__item is-libero"><i></i>Liberi <b th:text="${riepilogo['libero']}">5</b></span>
+            <span class="sala-legenda__item is-prenotato"><i></i>Prenotati <b th:text="${riepilogo['prenotato']}">2</b></span>
+            <span class="sala-legenda__item is-occupato"><i></i>Occupati <b th:text="${riepilogo['occupato']}">3</b></span>
+            <span class="sala-legenda__item is-pronto"><i></i>Piatti pronti <b th:text="${riepilogo['pronto']}">1</b></span>
+            <span class="sala-legenda__item is-conto"><i></i>Al conto <b th:text="${riepilogo['conto']}">1</b></span>
+            <span class="sala-legenda__live"><span class="live-dot"></span>In tempo reale</span>
+        </div>
+
+        <div class="sala-layout">
+            <!-- ===== mappa ===== -->
+            <section class="card mappa-card">
+                <div class="mappa-scroll">
+                    <div class="mappa" data-mappa>
+                        <div class="zona zona--sala"><span>Sala interna</span></div>
+                        <div class="zona zona--terrazza"><span>Terrazza</span></div>
+                        <div class="zona zona--prive"><span>Sala privé</span></div>
+                        <div class="mappa__ingresso">Ingresso</div>
+
+                        <button type="button" th:each="v : ${sala}" class="tavolo"
+                                th:classappend="'forma-' + ${#strings.toLowerCase(v.tavolo().forma)} + ' is-' + ${v.stato()}"
+                                th:style="'left:' + ${v.tavolo().posX} + '%;top:' + ${v.tavolo().posY} + '%;--posti:' + ${v.tavolo().posti}"
+                                th:attr="data-id=${v.tavolo().id},data-stato=${v.stato()}"
+                                th:title="'Tavolo ' + ${v.tavolo().numero} + ' · ' + ${v.etichettaStato()}">
+                            <span class="tavolo__sedie" aria-hidden="true">
+                                <i th:each="k : ${#numbers.sequence(0, v.tavolo().posti - 1)}" th:with="n=${(v.tavolo().posti + 1) / 2}"
+                                   th:classappend="${k < n} ? 'su' : 'giu'"
+                                   th:style="'--k:' + ${k} + ';--i:' + ${k < n ? k : k - n} + ';--n:' + ${n}"></i>
+                            </span>
+                            <span class="tavolo__piano">
+                                <strong th:text="${v.tavolo().numero}">3</strong>
+                                <small th:if="${v.ordine() != null}" th:text="${v.ordine().minutiAlTavolo} + '′'">40′</small>
+                                <small th:if="${v.ordine() == null and v.prossima() != null}" th:text="${#temporals.format(v.prossima().ora, 'HH:mm')}">20:30</small>
+                                <small th:if="${v.ordine() == null and v.prossima() == null}" th:text="${v.tavolo().posti} + ' posti'">4 posti</small>
+                            </span>
+                            <span class="tavolo__bell" th:if="${v.stato() == 'pronto'}" aria-hidden="true">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#campana'"/></svg>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+                <p class="mappa-hint" sec:authorize="hasRole('ADMIN')" data-sala-hint hidden>
+                    Trascina i tavoli nella nuova posizione: la disposizione si salva da sola.
+                </p>
+            </section>
+
+            <!-- ===== dettaglio del tavolo scelto ===== -->
+            <aside class="card dettaglio" data-dettaglio>
+                <div class="dettaglio__vuoto" data-pannello="0">
+                    <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#sala'"/></svg></span>
+                    <strong>Scegli un tavolo</strong>
+                    <small>Tocca un tavolo sulla mappa per vedere comanda, conto e prenotazioni.</small>
+                    <ul class="list dettaglio__attivi">
+                        <li th:each="v : ${sala}" th:if="${v.ordine() != null}">
+                            <button type="button" class="dettaglio__riga" th:attr="data-scegli=${v.tavolo().id}">
+                                <span class="tavolo-badge" th:classappend="'stato-' + ${v.stato()}" th:text="${v.tavolo().numero}">3</span>
+                                <span class="list__main">
+                                    <strong th:text="${v.etichettaStato()}">Occupato</strong>
+                                    <small th:text="${v.ordine().coperti} + ' coperti · ' + ${v.ordine().minutiAlTavolo} + ' min'">4 coperti</small>
+                                </span>
+                                <span class="num strong" th:text="${@fmt.euro(v.ordine().totaleCorrente)}">€ 80</span>
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="pannello" th:each="v : ${sala}" th:attr="data-pannello=${v.tavolo().id}" hidden>
+                    <header class="pannello__head">
+                        <div>
+                            <p class="eyebrow" th:text="${v.tavolo().zona.label} + ' · ' + ${v.tavolo().posti} + ' posti'">Sala · 4 posti</p>
+                            <h3>Tavolo <span th:text="${v.tavolo().numero}">3</span></h3>
+                        </div>
+                        <span class="pill" th:classappend="'pill--' + ${v.stato()}" th:text="${v.etichettaStato()}">Libero</span>
+                    </header>
+
+                    <!-- tavolo con comanda aperta -->
+                    <th:block th:if="${v.ordine() != null}" th:with="o=${v.ordine()}">
+                        <dl class="pannello__dati">
+                            <div><dt>Coperti</dt><dd th:text="${o.coperti}">4</dd></div>
+                            <div><dt>Al tavolo da</dt><dd th:text="${@fmt.durata(o.minutiAlTavolo)}">45 min</dd></div>
+                            <div><dt>Piatti</dt><dd th:text="${o.numeroPiatti}">8</dd></div>
+                            <div><dt>Conto</dt><dd th:text="${@fmt.euro(o.totaleCorrente)}">€ 120</dd></div>
+                        </dl>
+                        <p class="pannello__info" th:if="${o.cameriere}">
+                            <span class="avatar avatar--sm" th:text="${o.cameriere.iniziali}">MR</span>
+                            <span>Servito da <strong th:text="${o.cameriere.nomeCompleto}">Marco</strong></span>
+                        </p>
+                        <p class="pannello__info" th:if="${o.prenotazione}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>
+                            <span>Prenotazione di <strong th:text="${o.prenotazione.nome}">Rossi</strong></span>
+                        </p>
+                        <div class="alert alert--warn" th:if="${v.stato() == 'pronto'}">
+                            <svg class="i"><use th:href="@{/img/icons.svg} + '#campana'"/></svg>
+                            <span>Ci sono piatti pronti in cucina da portare al tavolo.</span>
+                        </div>
+                        <div class="pannello__azioni">
+                            <a class="btn btn--primary btn--lg btn--block" th:href="@{/gestione/ordini/{id}(id=${o.id})}">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#nota'"/></svg>Apri la comanda
+                            </a>
+                            <a class="btn btn--block" th:href="@{/gestione/ordini/{id}/preconto(id=${o.id})}" target="_blank">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#stampa'"/></svg>Preconto
+                            </a>
+                        </div>
+                    </th:block>
+
+                    <!-- tavolo libero -->
+                    <th:block th:if="${v.ordine() == null}">
+                        <div class="pannello__prenotazione" th:if="${v.prossima() != null}" th:with="p=${v.prossima()}">
+                            <span class="ora-badge" th:text="${#temporals.format(p.ora, 'HH:mm')}">20:30</span>
+                            <div class="list__main">
+                                <strong th:text="${p.nome}">Rossi</strong>
+                                <small th:text="${p.persone} + ' persone' + (${p.note != null} ? ' · ' + ${p.note} : '')">4 persone</small>
+                            </div>
+                        </div>
+                        <form method="post" class="pannello__apri" th:action="@{/gestione/sala/tavoli/{id}/apri(id=${v.tavolo().id})}">
+                            <label class="field">
+                                <span>Quante persone si siedono?</span>
+                                <div class="stepper stepper--lg" data-stepper>
+                                    <button type="button" data-delta="-1" aria-label="Una persona in meno"><svg class="i"><use th:href="@{/img/icons.svg} + '#meno'"/></svg></button>
+                                    <input type="number" name="coperti" min="1" max="30"
+                                           th:value="${v.prossima() != null} ? ${v.prossima().persone} : ${v.tavolo().posti < 2 ? v.tavolo().posti : 2}">
+                                    <button type="button" data-delta="1" aria-label="Una persona in più"><svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg></button>
+                                </div>
+                            </label>
+                            <button type="submit" class="btn btn--primary btn--lg btn--block">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Fai accomodare
+                            </button>
+                            <p class="field__hint" th:if="${v.prossima() != null}">Se sono gli ospiti prenotati, accomodali dall'agenda delle prenotazioni: la prenotazione verrà collegata al conto.</p>
+                        </form>
+                    </th:block>
+                </div>
+            </aside>
+        </div>
+    </div>
+</main>
+</body>
+</html>

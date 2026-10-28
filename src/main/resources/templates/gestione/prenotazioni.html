@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Prenotazioni', ~{::main})}">
+<body>
+<main class="pagina" th:with="eOggi=${giorno.equals(oggi)}">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow" th:text="${@fmt.giornoRelativo(giorno) != null} ? ${@fmt.giornoRelativo(giorno)} : 'Agenda'">Oggi</p>
+            <h2 class="agenda-data" th:text="${#temporals.format(giorno, 'EEEE d MMMM')}">venerdì 23 ottobre</h2>
+        </div>
+        <div class="page-head__actions">
+            <div class="btn-row agenda-nav">
+                <a class="btn btn--icon" th:href="@{/gestione/prenotazioni(data=${giorno.minusDays(1)})}" aria-label="Giorno precedente">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg></a>
+                <a class="btn" th:unless="${eOggi}" th:href="@{/gestione/prenotazioni}">Oggi</a>
+                <form method="get" th:action="@{/gestione/prenotazioni}" class="agenda-picker">
+                    <input type="date" name="data" class="input" th:value="${giorno}" data-auto-submit aria-label="Scegli una data">
+                </form>
+                <a class="btn btn--icon" th:href="@{/gestione/prenotazioni(data=${giorno.plusDays(1)})}" aria-label="Giorno successivo">
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#freccia'"/></svg></a>
+            </div>
+            <a class="btn btn--primary" th:href="@{/gestione/prenotazioni/nuova(data=${giorno})}">
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#piu'"/></svg>Nuova prenotazione
+            </a>
+        </div>
+    </header>
+
+    <!-- ===== prossimi 15 giorni ===== -->
+    <nav class="card calendario" aria-label="Prossimi giorni">
+        <a th:each="g : ${calendario}" class="cal-giorno"
+           th:href="@{/gestione/prenotazioni(data=${g.key})}"
+           th:classappend="(${g.key.equals(giorno)} ? 'is-active ' : '') + (${g.key.equals(oggi)} ? 'is-oggi ' : '') + (${#temporals.dayOfWeek(g.key) == 1} ? 'is-chiuso' : '')">
+            <span class="cal-giorno__dow" th:text="${#temporals.format(g.key, 'EEE')}">ven</span>
+            <span class="cal-giorno__n" th:text="${#temporals.day(g.key)}">23</span>
+            <span class="cal-giorno__bar"><span th:style="'height:' + ${g.value > capienza ? 100 : g.value * 100 / capienza} + '%'"></span></span>
+            <span class="cal-giorno__cop" th:text="${#temporals.dayOfWeek(g.key) == 1} ? 'chiuso' : ${g.value} + ' cop.'">24 cop.</span>
+        </a>
+    </nav>
+
+    <section class="kpis kpis--3">
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg>Prenotazioni</p>
+            <p class="kpi__value" th:text="${totali}">8</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#persone'"/></svg>Coperti attesi</p>
+            <p class="kpi__value"><span th:text="${coperti}">32</span><small th:text="'su ' + ${capienza}">su 80</small></p>
+            <div class="barra barra--wine"><span th:style="'width:' + ${coperti > capienza ? 100 : coperti * 100 / capienza} + '%'"></span></div>
+        </article>
+        <article class="card kpi" th:classappend="${daConfermareGiorno > 0} ? 'kpi--avviso'">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>Da confermare</p>
+            <p class="kpi__value" th:text="${daConfermareGiorno}">1</p>
+            <p class="kpi__foot" th:text="${daConfermareGiorno > 0} ? 'Richiama il cliente e conferma' : 'Nessuna richiesta in sospeso'">—</p>
+        </article>
+    </section>
+
+    <div class="alert alert--warn" th:if="${chiuso}">
+        <svg class="i"><use th:href="@{/img/icons.svg} + '#avviso'"/></svg>
+        <span>Il lunedì il ristorante è chiuso: dal sito non si può prenotare.</span>
+    </div>
+
+    <div class="grid grid--2">
+        <section class="card" th:each="servizio : ${ {'Pranzo', 'Cena'} }"
+                 th:with="lista=${servizio == 'Pranzo'} ? ${pranzo} : ${cena}">
+            <header class="card__head">
+                <h3>
+                    <svg class="i"><use th:href="@{/img/icons.svg} + '#' + (${servizio == 'Pranzo'} ? 'sole' : 'luna')"/></svg>
+                    <span th:text="${servizio}">Cena</span>
+                </h3>
+                <span class="faint" th:text="${#lists.size(lista)} + (${#lists.size(lista) == 1} ? ' prenotazione' : ' prenotazioni')">5 prenotazioni</span>
+            </header>
+            <div class="card__body--flush">
+                <ul class="agenda" th:unless="${#lists.isEmpty(lista)}">
+                    <li class="agenda__voce" th:each="p : ${lista}" th:classappend="${p.stato.name() == 'NO_SHOW' or p.stato.name() == 'CANCELLATA'} ? 'is-annullata' : (${p.stato.name() == 'COMPLETATA'} ? 'is-chiusa' : '')">
+                        <span class="agenda__ora" th:text="${#temporals.format(p.ora, 'HH:mm')}">20:30</span>
+                        <div class="agenda__main">
+                            <div class="agenda__riga">
+                                <a class="agenda__nome" th:href="@{/gestione/prenotazioni/{id}(id=${p.id})}" th:text="${p.nome}">Rossi</a>
+                                <span class="pill" th:classappend="'pill--' + ${p.stato.tone}" th:text="${p.stato.label}">Confermata</span>
+                            </div>
+                            <p class="agenda__info">
+                                <span><svg class="i"><use th:href="@{/img/icons.svg} + '#persone'"/></svg><b th:text="${p.persone}">4</b></span>
+                                <span th:if="${p.tavolo}"><svg class="i"><use th:href="@{/img/icons.svg} + '#tavolo'"/></svg>Tavolo <b th:text="${p.tavolo.numero}">3</b></span>
+                                <span th:if="${p.tavolo == null and p.attiva}" class="agenda__no-tavolo">Tavolo da assegnare</span>
+                                <a th:href="'tel:' + ${p.telefono}" th:text="${p.telefono}">333</a>
+                                <span class="faint" th:text="${p.origine.label}">Sito web</span>
+                            </p>
+                            <p class="agenda__nota" th:if="${p.note}">
+                                <svg class="i"><use th:href="@{/img/icons.svg} + '#nota'"/></svg><span th:text="${p.note}">Anniversario</span>
+                            </p>
+                            <div class="agenda__azioni">
+                                <th:block th:if="${p.stato.name() == 'RICHIESTA'}">
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" class="inline">
+                                        <button class="btn btn--sm btn--ok" name="stato" value="CONFERMATA">
+                                            <svg class="i"><use th:href="@{/img/icons.svg} + '#check'"/></svg>Conferma</button>
+                                    </form>
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" class="inline"
+                                          data-conferma="Rifiutare la richiesta di prenotazione?">
+                                        <button class="btn btn--sm btn--ghost" name="stato" value="CANCELLATA">Rifiuta</button>
+                                    </form>
+                                </th:block>
+                                <th:block th:if="${p.stato.name() == 'CONFERMATA'}">
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/accomoda(id=${p.id})}" class="inline" th:if="${eOggi}">
+                                        <button class="btn btn--sm btn--primary">
+                                            <svg class="i"><use th:href="@{/img/icons.svg} + '#porta'"/></svg>Fai accomodare</button>
+                                    </form>
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" class="inline" th:if="${eOggi}"
+                                          data-conferma="Segnare il cliente come non presentato?">
+                                        <button class="btn btn--sm btn--ghost" name="stato" value="NO_SHOW">Non presentato</button>
+                                    </form>
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" class="inline"
+                                          data-conferma="Cancellare la prenotazione?">
+                                        <button class="btn btn--sm btn--ghost" name="stato" value="CANCELLATA">Cancella</button>
+                                    </form>
+                                </th:block>
+                                <th:block th:if="${p.stato.name() == 'NO_SHOW' or p.stato.name() == 'CANCELLATA'}">
+                                    <form method="post" th:action="@{/gestione/prenotazioni/{id}/stato(id=${p.id})}" class="inline">
+                                        <button class="btn btn--sm btn--ghost" name="stato" value="CONFERMATA">Ripristina</button>
+                                    </form>
+                                </th:block>
+                                <a class="btn btn--sm btn--ghost btn--icon" th:if="${p.attiva and p.stato.name() != 'ARRIVATA'}"
+                                   th:href="@{/gestione/prenotazioni/{id}(id=${p.id})}" title="Modifica" aria-label="Modifica">
+                                    <svg class="i"><use th:href="@{/img/icons.svg} + '#modifica'"/></svg></a>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+                <div class="empty" th:if="${#lists.isEmpty(lista)}">
+                    <span class="empty__icon"><svg class="i"><use th:href="@{/img/icons.svg} + '#calendario'"/></svg></span>
+                    <strong th:text="'Nessuna prenotazione a ' + ${#strings.toLowerCase(servizio)}">Nessuna prenotazione</strong>
+                    <a class="link" th:href="@{/gestione/prenotazioni/nuova(data=${giorno})}">Aggiungine una</a>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

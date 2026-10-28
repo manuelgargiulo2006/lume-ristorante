@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/app :: layout('Statistiche', ~{::main})}">
+<body>
+<main class="pagina" data-statistiche th:attr="data-giorni=${giorni}">
+
+    <header class="page-head">
+        <div class="page-head__title">
+            <p class="eyebrow" th:text="'Ultimi ' + ${giorni} + ' giorni'">Ultimi 14 giorni</p>
+            <h2>Come sta andando <em>Lume</em></h2>
+        </div>
+        <div class="page-head__actions">
+            <nav class="seg" aria-label="Periodo">
+                <a th:each="g : ${periodi}" th:href="@{/gestione/statistiche(giorni=${g})}"
+                   th:classappend="${g == giorni} ? 'is-active'" th:text="${g} + ' giorni'">14 giorni</a>
+            </nav>
+            <button type="button" class="btn" data-esporta-csv>
+                <svg class="i"><use th:href="@{/img/icons.svg} + '#giu'"/></svg>Esporta CSV
+            </button>
+        </div>
+    </header>
+
+    <section class="kpis">
+        <article class="card kpi kpi--accent">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#conto'"/></svg>Incasso</p>
+            <p class="kpi__value num" th:text="${@fmt.euroTondo(riepilogo.incasso)}">€ 24.000</p>
+            <p class="kpi__foot">
+                <span th:if="${riepilogo.variazione != null}" class="delta" th:classappend="${riepilogo.variazione >= 0} ? 'delta--su' : 'delta--giu'"
+                      th:text="(${riepilogo.variazione >= 0} ? '▲ ' : '▼ ') + ${T(java.lang.Math).abs(riepilogo.variazione)} + '%'">▲ 8%</span>
+                <span th:text="'rispetto ai ' + ${giorni} + ' giorni prima'">rispetto al periodo precedente</span>
+            </p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#persone'"/></svg>Coperti</p>
+            <p class="kpi__value"><span th:text="${riepilogo.coperti}">540</span><small th:text="${riepilogo.conti} + ' conti'">200 conti</small></p>
+            <p class="kpi__foot" th:text="'≈ ' + ${riepilogo.coperti / giorni} + ' coperti al giorno'">≈ 40 al giorno</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#carta'"/></svg>Scontrino medio</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(riepilogo.scontrinoMedio)}">€ 110</p>
+            <p class="kpi__foot">per tavolo</p>
+        </article>
+        <article class="card kpi">
+            <p class="kpi__label"><svg class="i"><use th:href="@{/img/icons.svg} + '#calice'"/></svg>Spesa per coperto</p>
+            <p class="kpi__value num" th:text="${@fmt.euro(riepilogo.spesaPerCoperto)}">€ 48</p>
+            <p class="kpi__foot">coperto incluso</p>
+        </article>
+    </section>
+
+    <div class="grid grid--main">
+        <section class="card">
+            <header class="card__head">
+                <h3>Incasso giorno per giorno</h3>
+            </header>
+            <div class="card__body">
+                <div class="chart" data-chart="linea" data-euro data-altezza="260" data-csv="incassi">
+                    <script type="application/json" th:inline="javascript">/*[[${incassi}]]*/ []</script>
+                </div>
+            </div>
+        </section>
+
+        <section class="card ai-card" data-ai-analisi th:attr="data-url=@{/api/gestione/ai/analisi}">
+            <header class="card__head">
+                <h3><svg class="i"><use th:href="@{/img/icons.svg} + '#ai'"/></svg>Il parere dell'AI</h3>
+            </header>
+            <div class="card__body">
+                <div class="ai-card__vuoto" data-ai-vuoto>
+                    <p>Fai leggere i numeri del periodo a un consulente virtuale: ti dirà cosa funziona, cosa tenere d'occhio e un'azione concreta per questa settimana.</p>
+                    <button type="button" class="btn btn--ai btn--lg" data-ai-avvia>
+                        <svg class="i"><use th:href="@{/img/icons.svg} + '#ai'"/></svg><span>Analizza il periodo</span>
+                    </button>
+                </div>
+                <ol class="ai-card__punti" data-ai-punti hidden></ol>
+                <button type="button" class="link ai-card__rifai" data-ai-rifai hidden>Rigenera l'analisi</button>
+            </div>
+        </section>
+    </div>
+
+    <div class="grid grid--3">
+        <section class="card">
+            <header class="card__head"><h3>Quando arrivano i clienti</h3></header>
+            <div class="card__body">
+                <div class="chart" data-chart="barre" data-altezza="200">
+                    <script type="application/json" th:inline="javascript">/*[[${affluenza}]]*/ []</script>
+                </div>
+                <p class="chart-nota">Coperti per ora di arrivo al tavolo.</p>
+            </div>
+        </section>
+        <section class="card">
+            <header class="card__head"><h3>Incasso per categoria</h3></header>
+            <div class="card__body">
+                <div class="chart" data-chart="ciambella" data-euro data-etichetta="PIATTI">
+                    <script type="application/json" th:inline="javascript">/*[[${categorie}]]*/ []</script>
+                </div>
+            </div>
+        </section>
+        <section class="card">
+            <header class="card__head"><h3>Come pagano</h3></header>
+            <div class="card__body">
+                <div class="chart" data-chart="ciambella" data-etichetta="CONTI">
+                    <script type="application/json" th:inline="javascript">/*[[${pagamenti}]]*/ {}</script>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <div class="grid grid--main">
+        <section class="card">
+            <header class="card__head"><h3>I piatti più venduti</h3></header>
+            <div class="table-wrap" th:unless="${#lists.isEmpty(top)}">
+                <table class="tabella classifica-tab">
+                    <thead><tr><th>#</th><th>Piatto</th><th class="r">Porzioni</th><th class="r">Incasso</th><th style="width:28%"></th></tr></thead>
+                    <tbody>
+                    <tr th:each="t, st : ${top}">
+                        <td class="classifica__pos" th:text="${st.count}">1</td>
+                        <td><strong th:text="${t.nome}">Genovese</strong><small th:text="${t.categoria}">Primi</small></td>
+                        <td class="r num strong" th:text="${t.porzioni}">80</td>
+                        <td class="r num" th:text="${@fmt.euroTondo(t.incasso)}">€ 1.500</td>
+                        <td><div class="barra barra--wine"><span th:style="'width:' + ${t.percentuale} + '%'"></span></div></td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="empty" th:if="${#lists.isEmpty(top)}"><strong>Nessuna vendita nel periodo</strong></div>
+        </section>
+
+        <section class="card sprechi-card">
+            <div class="card__body">
+                <p class="eyebrow">Sprechi registrati</p>
+                <p class="sprechi-card__val num" th:text="${@fmt.euro(sprechi)}">€ 40</p>
+                <p class="muted" th:if="${riepilogo.incasso.signum() > 0}"
+                   th:text="'Pari al ' + ${@fmt.percentuale(sprechi, riepilogo.incasso)} + ' dell’incasso del periodo.'">0,2%</p>
+                <a class="btn btn--sm" th:href="@{/gestione/magazzino}">Vai al magazzino</a>
+            </div>
+        </section>
+    </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/testa :: head('Preconto tavolo ' + ${ordine.tavolo.numero})}"></head>
+<body class="preconto-body">
+
+<div class="preconto-azioni no-print">
+    <a class="btn" th:href="@{/gestione/ordini/{id}(id=${ordine.id})}">
+        <svg class="i"><use th:href="@{/img/icons.svg} + '#indietro'"/></svg>Torna alla comanda
+    </a>
+    <button type="button" class="btn btn--primary" onclick="window.print()">
+        <svg class="i"><use th:href="@{/img/icons.svg} + '#stampa'"/></svg>Stampa
+    </button>
+</div>
+
+<article class="scontrino">
+    <header class="scontrino__head">
+        <svg class="scontrino__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+        <h1>Lume</h1>
+        <p>Cucina campana contemporanea<br>Via Chiaia 148 · 80121 Napoli<br>081 000 0148</p>
+    </header>
+
+    <p class="scontrino__titolo">Preconto · non fiscale</p>
+    <p class="scontrino__meta">
+        <span th:text="'Tavolo ' + ${ordine.tavolo.numero}">Tavolo 3</span>
+        <span th:text="${ordine.coperti} + ' coperti'">4 coperti</span>
+        <span th:text="${#temporals.format(#temporals.createNow(), 'dd/MM/yyyy HH:mm')}">23/10/2026 21:40</span>
+    </p>
+
+    <table class="scontrino__righe">
+        <tbody>
+        <tr th:each="r : ${ordine.righe}">
+            <td class="q" th:text="${r.quantita}">2</td>
+            <td>
+                <span th:text="${r.piatto.nome}">Genovese</span>
+                <small th:if="${r.quantita > 1}" th:text="${r.quantita} + ' × ' + ${@fmt.importo(r.prezzoUnitario)}">2 × 19,00</small>
+            </td>
+            <td class="r" th:text="${@fmt.importo(r.importo)}">38,00</td>
+        </tr>
+        <tr>
+            <td class="q" th:text="${ordine.coperti}">4</td>
+            <td>Coperto</td>
+            <td class="r" th:text="${@fmt.importo(ordine.importoCoperti)}">14,00</td>
+        </tr>
+        <tr th:if="${ordine.scontoPercentuale > 0}">
+            <td></td>
+            <td th:text="'Sconto ' + ${ordine.scontoPercentuale} + '%'">Sconto</td>
+            <td class="r" th:text="'-' + ${@fmt.importo(ordine.importoSconto)}">-10,00</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="scontrino__totale">
+        <span>Totale</span>
+        <strong th:text="${@fmt.euro(ordine.totaleCorrente)}">€ 134,00</strong>
+    </div>
+    <p class="scontrino__diviso" th:if="${ordine.coperti > 1}"
+       th:text="'Diviso alla romana: ' + ${@fmt.quota(ordine.totaleCorrente, ordine.coperti)} + ' a persona'">
+        Diviso alla romana</p>
+
+    <footer class="scontrino__foot">
+        <p>Grazie della visita</p>
+        <p th:if="${ordine.cameriere}" th:text="'Vi ha servito ' + ${ordine.cameriere.nomeCompleto}">Vi ha servito Marco</p>
+    </footer>
+</article>
+
+<style>
+    .preconto-body { background: var(--surface-3); min-height: 100vh; padding: 32px 16px 64px; }
+    .preconto-azioni { display: flex; justify-content: center; gap: 8px; margin-bottom: 24px; }
+    .scontrino {
+        width: min(380px, 100%);
+        margin: 0 auto;
+        padding: 32px 28px 28px;
+        background: #fffdf9;
+        color: #1E1916;
+        font: 400 .88rem/1.5 var(--testo);
+        box-shadow: 0 20px 50px -20px rgba(0, 0, 0, .35);
+        border-radius: 4px;
+        -webkit-mask: radial-gradient(circle 6px at 50% 100%, transparent 98%, #000) 0 100% / 16px 100% repeat-x;
+        mask: radial-gradient(circle 6px at 50% 100%, transparent 98%, #000) 0 100% / 16px 100% repeat-x;
+    }
+    .scontrino__head { text-align: center; display: grid; justify-items: center; gap: 4px; }
+    .scontrino__logo { width: 34px; height: 34px; color: #B08A3E; }
+    .scontrino__head h1 { font: italic 500 2.4rem/1 var(--display); }
+    .scontrino__head p { font-size: .76rem; color: #6B625B; }
+    .scontrino__titolo { margin: 18px 0 6px; text-align: center; font-size: .7rem; letter-spacing: .2em; text-transform: uppercase; border-block: 1px dashed #CFC6BB; padding: 6px 0; }
+    .scontrino__meta { display: flex; justify-content: space-between; font-size: .76rem; color: #6B625B; margin-bottom: 10px; }
+    .scontrino__righe { width: 100%; border-collapse: collapse; }
+    .scontrino__righe td { padding: 5px 0; vertical-align: top; }
+    .scontrino__righe .q { width: 28px; color: #6B625B; }
+    .scontrino__righe td:nth-child(2) { padding-right: 14px; }
+    .scontrino__righe .r { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .scontrino__righe small { display: block; color: #978C83; font-size: .72rem; }
+    .scontrino__totale { display: flex; justify-content: space-between; align-items: baseline; margin-top: 10px; padding-top: 10px; border-top: 1px dashed #CFC6BB; }
+    .scontrino__totale span { font-weight: 600; text-transform: uppercase; letter-spacing: .1em; font-size: .78rem; }
+    .scontrino__totale strong { font: 500 1.8rem/1 var(--display); }
+    .scontrino__diviso { text-align: right; font-size: .76rem; color: #6B625B; margin-top: 4px; }
+    .scontrino__foot { margin-top: 22px; text-align: center; font-size: .76rem; color: #6B625B; display: grid; gap: 2px; }
+    .scontrino__foot p:first-child { font: italic 500 1.1rem/1.3 var(--display); color: #1E1916; }
+    @media print {
+        .preconto-body { background: #fff; padding: 0; }
+        .scontrino { box-shadow: none; width: 80mm; padding: 4mm; -webkit-mask: none; mask: none; }
+        @page { size: 80mm auto; margin: 0; }
+    }
+</style>
+</body>
+</html>

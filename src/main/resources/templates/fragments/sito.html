@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<!-- Pezzi comuni del sito pubblico: <head>, barra di navigazione e piè di pagina -->
+
+<head th:fragment="head(titolo)">
+    <meta charset="UTF-8">
+    <script>document.documentElement.classList.add('js')</script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titolo} + ' · Lume Ristorante'">Lume Ristorante</title>
+    <meta name="description" content="Lume, cucina campana contemporanea a Chiaia, Napoli. Menù di stagione, percorsi degustazione e prenotazione online.">
+    <meta name="theme-color" content="#2B0F17">
+    <link rel="icon" th:href="@{/img/favicon.svg}" type="image/svg+xml">
+    <link rel="preload" th:href="@{/fonts/bodoni-moda-italic.woff}" as="font" type="font/woff" crossorigin>
+    <link rel="stylesheet" th:href="@{/css/fonts.css}">
+    <link rel="stylesheet" th:href="@{/css/sito.css}">
+    <script th:src="@{/js/sito.js}" defer></script>
+</head>
+
+<body>
+
+<header class="nav" th:fragment="nav(attiva)" data-nav>
+    <div class="nav__inner">
+        <a class="nav__brand" th:href="@{/}" aria-label="Lume, torna alla home">
+            <svg class="nav__logo" aria-hidden="true"><use th:href="@{/img/icons.svg} + '#logo'"/></svg>
+            <span>Lume</span>
+        </a>
+        <nav class="nav__links" aria-label="Navigazione principale">
+            <a th:href="@{/}" th:classappend="${attiva == 'home'} ? 'is-active'">Il ristorante</a>
+            <a th:href="@{/menu}" th:classappend="${attiva == 'menu'} ? 'is-active'">Menù</a>
+            <a th:href="@{/prenotazione}" th:classappend="${attiva == 'gestisci'} ? 'is-active'">La mia prenotazione</a>
+        </nav>
+        <a class="btn btn--brass nav__cta" th:href="@{/prenota}">Prenota</a>
+        <button class="nav__toggle" type="button" aria-label="Apri il menù" aria-expanded="false" data-nav-toggle>
+            <span></span><span></span>
+        </button>
+    </div>
+</header>
+
+<footer class="footer" th:fragment="footer">
+    <div class="footer__inner">
+        <div class="footer__brand">
+            <span class="footer__name">Lume</span>
+            <p>Cucina campana contemporanea.<br>Dal 2019 a Chiaia.</p>
+        </div>
+        <div>
+            <h4>Dove</h4>
+            <p>Via Chiaia 148<br>80121 Napoli</p>
+        </div>
+        <div>
+            <h4>Quando</h4>
+            <p>Martedì – Domenica<br>Pranzo 12:30 – 15:00<br>Cena 19:30 – 23:30</p>
+        </div>
+        <div>
+            <h4>Contatti</h4>
+            <p><a href="tel:+390810000148">081 000 0148</a><br><a href="mailto:tavoli@lume.example">tavoli@lume.example</a></p>
+        </div>
+    </div>
+    <div class="footer__base">
+        <span>© <span th:text="${#temporals.year(#temporals.createNow())}">2026</span> Lume Ristorante</span>
+        <a th:href="@{/login}">Area staff</a>
+    </div>
+</footer>
+
+</body>
+</html>
